@@ -9,6 +9,19 @@ namespace Razor.Extensions;
 /// <summary>Extensions for the <see cref="BinaryReader" /> class.</summary>
 public static class BinaryReaderExtensions
 {
+    /// <summary>Reads 2 bytes in big-endian form.</summary>
+    /// <param name="reader">
+    ///     The <see cref="BinaryReader" /> to read from.
+    /// </param>
+    /// <returns>
+    ///     A new <see cref="ushort" /> with the 2 bytes in big-endian form.
+    /// </returns>
+    public static ushort ReadUInt16BigEndian(this BinaryReader reader)
+    {
+        var bytes = reader.ReadBytes(2);
+        return BinaryPrimitives.ReadUInt16BigEndian(bytes);
+    }
+
     /// <summary>Reads 3 bytes in big-endian form.</summary>
     /// <param name="reader">
     ///     The <see cref="BinaryReader" /> to read from.
