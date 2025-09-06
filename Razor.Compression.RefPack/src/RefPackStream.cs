@@ -188,12 +188,26 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
     ///     currently available, or zero if the end of the stream has been
     ///     reached.
     /// </returns>
+    /// <exception cref="ObjectDisposedException">
+    ///     Thrown if the stream is disposed.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///     Thrown if the given <paramref name="offset" /> or
+    ///     <paramref name="count" /> is negative or if the given
+    ///     <paramref name="offset" /> + <paramref name="count" /> is greater
+    ///     than the length of the given <paramref name="buffer" />.
+    /// </exception>
     /// <exception cref="InvalidOperationException">
     ///     Thrown if the stream is not readable or if the stream is not a valid
     ///     RefPack stream.
     /// </exception>
     public override int Read(byte[] buffer, int offset, int count)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
+
         if (!CanRead)
         {
             throw new InvalidOperationException("The stream is not readable.");
@@ -248,8 +262,49 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
         throw new NotSupportedException("Setting the length is not supported.");
     }
 
+    /// <summary>
+    ///     Writes a sequence of bytes to the current stream and advances the
+    ///     position within the stream by the number of bytes written.
+    /// </summary>
+    /// <param name="buffer">
+    ///     The byte array that contains the data to write to the stream.
+    /// </param>
+    /// <param name="offset">
+    ///     The zero-based byte offset in the <paramref name="buffer"/> at which
+    ///     to begin copying bytes to the stream.
+    /// </param>
+    /// <param name="count">
+    ///     The maximum number of bytes to write to the stream.
+    /// </param>
+    /// <exception cref="ObjectDisposedException">
+    ///     Thrown if the stream has been disposed.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///     Thrown if <paramref name="offset"/> or <paramref name="count"/> is
+    ///     negative, or if the sum of <paramref name="offset"/> and
+    ///     <paramref name="count"/> exceeds the length of the
+    ///     <paramref name="buffer"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    ///     Thrown if the stream is not writable.
+    /// </exception>
     public override void Write(byte[] buffer, int offset, int count)
     {
-        throw new NotImplementedException();
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
+
+        if (!CanWrite)
+        {
+            throw new InvalidOperationException("The stream is not writable.");
+        }
+
+        if (count == 0)
+        {
+            return;
+        }
+
+        RefPackEncoder.Encode(stream, buffer, 0, buffer.Length);
     }
 }
