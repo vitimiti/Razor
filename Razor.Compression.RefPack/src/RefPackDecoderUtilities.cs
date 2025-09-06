@@ -2,7 +2,6 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
 using Razor.Extensions;
 
 namespace Razor.Compression.RefPack;
@@ -25,7 +24,7 @@ internal static class RefPackDecoderUtilities
             return false;
         }
 
-        using BinaryReader reader = new(stream, Encoding.ASCII, leaveOpen: true);
+        using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
         return packType is 0x10FB or 0x11FB or 0x90FB or 0x91FB;
     }
@@ -56,7 +55,7 @@ internal static class RefPackDecoderUtilities
 
         ArgumentOutOfRangeException.ThrowIfLessThan(stream.Length, 2);
 
-        using BinaryReader reader = new(stream, Encoding.ASCII, leaveOpen: true);
+        using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
         var bytesToRead = (packType & 0x8000) != 0 ? 4 : 3;
 
