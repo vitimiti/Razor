@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Extensions", "Razor.Extensions\Razor.Extensions.csproj", "{BBB4B7CC-5D67-4A3C-B059-B8DD02AAE3EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression.RefPack", "Razor.Compression.RefPack\Razor.Compression.RefPack.csproj", "{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{BBB4B7CC-5D67-4A3C-B059-B8DD02AAE3EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBB4B7CC-5D67-4A3C-B059-B8DD02AAE3EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBB4B7CC-5D67-4A3C-B059-B8DD02AAE3EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
