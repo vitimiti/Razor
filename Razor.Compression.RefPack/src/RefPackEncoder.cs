@@ -10,18 +10,17 @@ namespace Razor.Compression.RefPack;
 internal static class RefPackEncoder
 {
     /// <summary>Encodes and compresses a specified range of data from the provided buffer into a stream using the RefPack compression algorithm.</summary>
-    /// <param name="stream">The target stream where the encoded and compressed data will be written.</param>
+    /// <param name="writer">The binary writer that will write the encoded and RefPack compressed data.</param>
     /// <param name="buffer">The input buffer containing the data to be encoded and compressed.</param>
     /// <param name="offset">The zero-based byte offset in the buffer at which to begin reading data.</param>
     /// <param name="count">The number of bytes to read from the buffer starting from the specified offset.</param>
     /// <exception cref="System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative, or if the sum of <paramref name="offset"/> and <paramref name="count"/> exceeds the length of <paramref name="buffer"/>.</exception>
-    public static void Encode(Stream stream, byte[] buffer, int offset, int count)
+    public static void Encode(BinaryWriter writer, byte[] buffer, int offset, int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length, offset + count);
 
-        using BinaryWriter writer = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var uncompressedLength = buffer.Length;
         if (uncompressedLength > 0xFFFFFF)
         {

@@ -2,6 +2,8 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Razor.Extensions;
+
 namespace Razor.Compression.RefPack;
 
 /// <summary>Represents a stream that provides compression or decompression functionality using the RefPack algorithm.</summary>
@@ -111,7 +113,7 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
         }
 
         stream.Position = 0;
-        using BinaryReader reader = new(stream);
+        using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         return (int)RefPackDecoder.Decode(reader, buffer, offset, count);
     }
 
@@ -157,6 +159,8 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
             return;
         }
 
-        RefPackEncoder.Encode(stream, buffer, 0, buffer.Length);
+        stream.Position = 0;
+        using BinaryWriter writer = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
+        RefPackEncoder.Encode(writer, buffer, 0, buffer.Length);
     }
 }
