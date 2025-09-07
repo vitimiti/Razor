@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Extensions", "Razor.E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression.RefPack", "Razor.Compression.RefPack\Razor.Compression.RefPack.csproj", "{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression.BinaryTree", "Razor.Compression.BinaryTree\Razor.Compression.BinaryTree.csproj", "{06B0BF11-39A3-4F36-A882-D53D52E0A929}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F77C3CC-7D1C-4EB8-B131-44AD90A0E04B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06B0BF11-39A3-4F36-A882-D53D52E0A929}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06B0BF11-39A3-4F36-A882-D53D52E0A929}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06B0BF11-39A3-4F36-A882-D53D52E0A929}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06B0BF11-39A3-4F36-A882-D53D52E0A929}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
