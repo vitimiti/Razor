@@ -10,9 +10,7 @@ namespace Razor.Extensions;
 public static class EncodingExtensions
 {
     /// <summary>Gets the Windows-1252 ASCII encoding.</summary>
-    /// <returns>
-    ///     A new <see cref="Encoding" /> that supports Windows-1252.
-    /// </returns>
+    /// <returns>A new <see cref="Encoding" /> that supports Windows-1252.</returns>
     public static Encoding Ansi => Encoding.GetEncoding(1252);
 
     static EncodingExtensions()

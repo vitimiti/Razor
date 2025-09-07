@@ -9,14 +9,9 @@ namespace Razor.Compression.RefPack;
 /// <summary>Utilities for the RefPack file format.</summary>
 internal static class RefPackDecoderUtilities
 {
-    /// <summary>
-    ///     Checks whether a given stream is RefPack compressed data.
-    /// </summary>
+    /// <summary>Checks whether a given stream is RefPack compressed data.</summary>
     /// <param name="stream">The stream to check the compression type.</param>
-    /// <returns>
-    ///     <see langword="true" /> if the stream is RefPack compressed data,
-    ///     otherwise <see langword="false" />.
-    /// </returns>
+    /// <returns><see langword="true" /> if the stream is RefPack compressed data, otherwise <see langword="false" />.</returns>
     public static bool IsRefPack(Stream stream)
     {
         if (stream.Length < 2)
@@ -29,20 +24,11 @@ internal static class RefPackDecoderUtilities
         return packType is 0x10FB or 0x11FB or 0x90FB or 0x91FB;
     }
 
-    /// <summary>
-    ///     Gets the uncompressed size of the given RefPack compressed stream.
-    /// </summary>
-    /// <param name="stream">
-    ///     The RefPack compressed stream to get the uncompressed size from.
-    /// </param>
+    /// <summary>Gets the uncompressed size of the given RefPack compressed stream.</summary>
+    /// <param name="stream">The RefPack compressed stream to get the uncompressed size from.</param>
     /// <returns>A new <see cref="uint" /> with the uncompressed size.</returns>
-    /// <exception cref="ArgumentException">
-    ///     When the given <paramref name="stream" /> is not a RefPack stream.
-    /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///     When the given <paramref name="stream" /> is too small to contain
-    ///     the uncompressed size.
-    /// </exception>
+    /// <exception cref="ArgumentException">When the given <paramref name="stream" /> is not a RefPack stream.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">When the given <paramref name="stream" /> is too small to contain the uncompressed size.</exception>
     public static uint GetUncompressedSize(Stream stream)
     {
         if (!IsRefPack(stream))

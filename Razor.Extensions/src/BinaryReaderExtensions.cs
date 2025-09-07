@@ -10,12 +10,8 @@ namespace Razor.Extensions;
 public static class BinaryReaderExtensions
 {
     /// <summary>Reads 2 bytes in big-endian form.</summary>
-    /// <param name="reader">
-    ///     The <see cref="BinaryReader" /> to read from.
-    /// </param>
-    /// <returns>
-    ///     A new <see cref="ushort" /> with the 2 bytes in big-endian form.
-    /// </returns>
+    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
+    /// <returns>A new <see cref="ushort" /> with the 2 bytes in big-endian form.</returns>
     public static ushort ReadUInt16BigEndian(this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(2);
@@ -23,12 +19,8 @@ public static class BinaryReaderExtensions
     }
 
     /// <summary>Reads 3 bytes in big-endian form.</summary>
-    /// <param name="reader">
-    ///     The <see cref="BinaryReader" /> to read from.
-    /// </param>
-    /// <returns>
-    ///     A new <see cref="uint" /> with the 3 bytes in big-endian form.
-    /// </returns>
+    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
+    /// <returns>A new <see cref="uint" /> with the 3 bytes in big-endian form.</returns>
     public static uint ReadUInt24BigEndian(this BinaryReader reader)
     {
         var byte1 = reader.ReadByte();
@@ -38,12 +30,8 @@ public static class BinaryReaderExtensions
     }
 
     /// <summary>Reads 4 bytes in big-endian form.</summary>
-    /// <param name="reader">
-    ///     The <see cref="BinaryReader" /> to read from.
-    /// </param>
-    /// <returns>
-    ///     A new <see cref="uint" /> with the 4 bytes in big-endian form.
-    /// </returns>
+    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
+    /// <returns>A new <see cref="uint" /> with the 4 bytes in big-endian form.</returns>
     public static uint ReadUInt32BigEndian(this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(4);

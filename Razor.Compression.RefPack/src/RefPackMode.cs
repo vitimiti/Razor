@@ -10,8 +10,6 @@ public enum RefPackMode
     /// <summary>The RefPack stream is being used to compress a file.</summary>
     Compression,
 
-    /// <summary>
-    ///     The RefPack stream is being used to decompress a file.
-    /// </summary>
+    /// <summary>The RefPack stream is being used to decompress a file.</summary>
     Decompression,
 }

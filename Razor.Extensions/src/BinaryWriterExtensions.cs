@@ -10,9 +10,7 @@ namespace Razor.Extensions;
 public static class BinaryWriterExtensions
 {
     /// <summary>Writes 2 bytes in big-endian form.</summary>
-    /// <param name="writer">
-    ///     The <see cref="BinaryWriter" /> to write to.
-    /// </param>
+    /// <param name="writer">The <see cref="BinaryWriter" /> to write to.</param>
     /// <param name="value">The value to write as 2 big-endian bytes.</param>
     public static void WriteUInt16BigEndian(this BinaryWriter writer, ushort value)
     {
@@ -22,9 +20,7 @@ public static class BinaryWriterExtensions
     }
 
     /// <summary>Writes 3 bytes in big-endian form.</summary>
-    /// <param name="writer">
-    ///     The <see cref="BinaryWriter" /> to write to.
-    /// </param>
+    /// <param name="writer">The <see cref="BinaryWriter" /> to write to.</param>
     /// <param name="value">The value to write as 3 big-endian bytes.</param>
     public static void WriteUInt24BigEndian(this BinaryWriter writer, uint value)
     {
@@ -34,9 +30,7 @@ public static class BinaryWriterExtensions
     }
 
     /// <summary>Writes 4 bytes in big-endian form.</summary>
-    /// <param name="writer">
-    ///     The <see cref="BinaryWriter" /> to write to.
-    /// </param>
+    /// <param name="writer">The <see cref="BinaryWriter" /> to write to.</param>
     /// <param name="value">The value to write as 4 big-endian bytes.</param>
     public static void WriteUInt32BigEndian(this BinaryWriter writer, uint value)
     {
