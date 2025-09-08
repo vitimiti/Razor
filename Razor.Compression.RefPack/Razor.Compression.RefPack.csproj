@@ -7,4 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Razor.Extensions\Razor.Extensions.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" PrivateAssets="all" />
+  </ItemGroup>
 </Project>

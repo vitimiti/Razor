@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO.Compression;
+using JetBrains.Annotations;
 using Razor.Extensions;
 
 namespace Razor.Compression.RefPack;
@@ -12,6 +13,7 @@ namespace Razor.Compression.RefPack;
 /// <param name="mode">The mode of the stream.</param>
 /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
 /// <remarks>The <see cref="RefPackStream"/> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
+[PublicAPI]
 public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
     : Stream
 {
