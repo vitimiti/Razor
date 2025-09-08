@@ -96,35 +96,6 @@ internal static class BinaryTreeDecoder
         return length;
     }
 
-    private static void Chase(
-        byte[] buffer,
-        sbyte[] clueTable,
-        byte[] leftNodes,
-        byte[] rightNodes,
-        ref int offset,
-        byte node
-    )
-    {
-        // Use the stack to avoid recursion.
-        var stack = new Stack<byte>();
-        stack.Push(node);
-
-        while (stack.Count > 0)
-        {
-            var n = stack.Pop();
-            if (clueTable[n] != 0)
-            {
-                // Push right first so left is processed first (LIFO).
-                stack.Push(rightNodes[n]);
-                stack.Push(leftNodes[n]);
-            }
-            else
-            {
-                buffer[offset++] = n;
-            }
-        }
-    }
-
     private static void InitializeTables(
         BinaryReader reader,
         sbyte[] clueTable,
@@ -156,6 +127,35 @@ internal static class BinaryTreeDecoder
 
         buffer[offset++] = node;
         return true;
+    }
+
+    private static void Chase(
+        byte[] buffer,
+        sbyte[] clueTable,
+        byte[] leftNodes,
+        byte[] rightNodes,
+        ref int offset,
+        byte node
+    )
+    {
+        // Use the stack to avoid recursion.
+        var stack = new Stack<byte>();
+        stack.Push(node);
+
+        while (stack.Count > 0)
+        {
+            var currentNode = stack.Pop();
+            if (clueTable[currentNode] != 0)
+            {
+                // Push right first so left is processed first (LIFO).
+                stack.Push(rightNodes[currentNode]);
+                stack.Push(leftNodes[currentNode]);
+            }
+            else
+            {
+                buffer[offset++] = currentNode;
+            }
+        }
     }
 
     private static bool TryAndProcessNegativeClue(
