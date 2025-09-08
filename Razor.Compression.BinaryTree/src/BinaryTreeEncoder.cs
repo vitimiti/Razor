@@ -8,9 +8,9 @@ namespace Razor.Compression.BinaryTree;
 
 internal static class BinaryTreeEncoder
 {
-    private const int BinaryTreeCodes = 0x100;
-    private const int BinaryTreeBigNumber = 32_000;
-    private const int BinaryTreeSlopage = 0x4000;
+    private const int Codes = 0x100;
+    private const int BigNumber = 32_000;
+    private const int Slopage = 0x4000;
 
     public static void Encode(BinaryWriter writer, byte[] buffer, int offset, int count)
     {
@@ -38,8 +38,8 @@ internal static class BinaryTreeEncoder
             context.Masks[i] = (context.Masks[i - 1] << 1) + 1;
         }
 
-        var buffer1Size = count * 3 / 2 + BinaryTreeSlopage;
-        var buffer2Size = count * 3 / 2 + BinaryTreeSlopage;
+        var buffer1Size = count * 3 / 2 + Slopage;
+        var buffer2Size = count * 3 / 2 + Slopage;
         context.Buffer1 = new byte[buffer1Size];
         context.Buffer2 = new byte[buffer2Size];
 
@@ -276,7 +276,7 @@ internal static class BinaryTreeEncoder
         }
 
         // Don't use 0 for clue or node, so that it is reserved.
-        count2[0] = BinaryTreeBigNumber;
+        count2[0] = BigNumber;
     }
 
     private static void InitializeQueues(
@@ -287,7 +287,7 @@ internal static class BinaryTreeEncoder
     )
     {
         Array.Clear(context.ClueQueue);
-        for (var i = 0; i < BinaryTreeCodes; i++)
+        for (var i = 0; i < Codes; i++)
         {
             freeQueue[i] = 1;
             tryQueue[i] = (byte)(count2[i] > 3 ? 1 : 0);
@@ -296,7 +296,7 @@ internal static class BinaryTreeEncoder
 
     private static void InitializeSortPointers(uint[] sortPointer)
     {
-        for (var i = 0; i < BinaryTreeCodes; i++)
+        for (var i = 0; i < Codes; i++)
         {
             sortPointer[i] = (uint)i;
         }
@@ -308,7 +308,7 @@ internal static class BinaryTreeEncoder
         while (swapped)
         {
             swapped = false;
-            for (var i = 1; i < BinaryTreeCodes; i++)
+            for (var i = 1; i < Codes; i++)
             {
                 var first = sortPointer[i];
                 var second = sortPointer[i - 1];
@@ -338,8 +338,7 @@ internal static class BinaryTreeEncoder
     private static void AdvanceToNextFreePointer(TreePackState state)
     {
         while (
-            state.FreePointer < BinaryTreeCodes
-            && state.FreeQueue[state.SortPointer[state.FreePointer]] == 0
+            state.FreePointer < Codes && state.FreeQueue[state.SortPointer[state.FreePointer]] == 0
         )
         {
             state.FreePointer++;
@@ -395,7 +394,7 @@ internal static class BinaryTreeEncoder
             }
 
             AdvanceToNextFreePointer(state);
-            if (state.FreePointer >= BinaryTreeCodes)
+            if (state.FreePointer >= Codes)
             {
                 continue;
             }
@@ -558,9 +557,9 @@ internal static class BinaryTreeEncoder
         public int BufferEndExclusive { get; set; }
 
         public uint[] Masks { get; } = new uint[0x11];
-        public byte[] ClueQueue { get; } = new byte[BinaryTreeCodes];
-        public byte[] Right { get; } = new byte[BinaryTreeCodes];
-        public byte[] Join { get; } = new byte[BinaryTreeCodes];
+        public byte[] ClueQueue { get; } = new byte[Codes];
+        public byte[] Right { get; } = new byte[Codes];
+        public byte[] Join { get; } = new byte[Codes];
         public byte[] Buffer1 { get; set; } = [];
         public byte[] Buffer2 { get; set; } = [];
         public byte[] BufferBase { get; set; } = [];
@@ -571,16 +570,16 @@ internal static class BinaryTreeEncoder
     private sealed class TreePackState
     {
         public short[] Count { get; } = new short[0x10000];
-        public uint[] Count2 { get; } = new uint[BinaryTreeCodes];
-        public byte[] TryQueue { get; } = new byte[BinaryTreeCodes];
-        public byte[] FreeQueue { get; } = new byte[BinaryTreeCodes];
-        public byte[] BestJoin { get; } = new byte[BinaryTreeCodes];
-        public uint[] BestNumber { get; } = new uint[BinaryTreeCodes];
-        public uint[] BestValue { get; } = new uint[BinaryTreeCodes];
-        public uint[] BtNode { get; } = new uint[BinaryTreeCodes];
-        public uint[] BtLeft { get; } = new uint[BinaryTreeCodes];
-        public uint[] BtRight { get; } = new uint[BinaryTreeCodes];
-        public uint[] SortPointer { get; } = new uint[BinaryTreeCodes];
+        public uint[] Count2 { get; } = new uint[Codes];
+        public byte[] TryQueue { get; } = new byte[Codes];
+        public byte[] FreeQueue { get; } = new byte[Codes];
+        public byte[] BestJoin { get; } = new byte[Codes];
+        public uint[] BestNumber { get; } = new uint[Codes];
+        public uint[] BestValue { get; } = new uint[Codes];
+        public uint[] BtNode { get; } = new uint[Codes];
+        public uint[] BtLeft { get; } = new uint[Codes];
+        public uint[] BtRight { get; } = new uint[Codes];
+        public uint[] SortPointer { get; } = new uint[Codes];
 
         public uint FreePointer { get; set; }
         public uint BtSize { get; set; }
