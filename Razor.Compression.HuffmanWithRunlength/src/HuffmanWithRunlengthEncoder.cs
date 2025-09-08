@@ -108,7 +108,7 @@ internal static class HuffmanWithRunlengthEncoder
         return i1;
     }
 
-    private static (NodePair first, NodePair second) FindTwoSmallest(
+    private static (NodePair First, NodePair Second) FindTwoSmallest(
         Span<uint> listCount,
         int count
     )
@@ -837,9 +837,9 @@ internal static class HuffmanWithRunlengthEncoder
     }
 
     private static (
-        uint longestIndex,
-        uint secondLongestIndex,
-        uint longestLength
+        uint LongestIndex,
+        uint SecondLongestIndex,
+        uint LongestLength
     ) FindTwoLongestCodes(EncodeContext context)
     {
         uint longestLen = 0;

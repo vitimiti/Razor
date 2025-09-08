@@ -85,12 +85,12 @@ internal static class RefPackEncoder
     /// <returns>
     /// <list type="bullet">
     /// <listheader>A tuple consisting of:</listheader>
-    /// <item><c>bOffset</c>: The relative offset of the best match.</item>
-    /// <item><c>bLength</c>: The length of the best match.</item>
-    /// <item><c>bCost</c>: The cost in bytes to encode the match.</item>
+    /// <item><c>BackOffset</c>: The relative offset of the best match.</item>
+    /// <item><c>BackLength</c>: The length of the best match.</item>
+    /// <item><c>BackCost</c>: The cost in bytes to encode the match.</item>
     /// </list>
     /// </returns>
-    private static (int bOffset, int bLength, int bCost) FindBestMatch(
+    private static (int BackOffset, int BackLength, int BackCost) FindBestMatch(
         byte[] source,
         int cPtr,
         int fromStart,
