@@ -9,20 +9,37 @@ using Razor.Extensions;
 namespace Razor.Compression.RefPack;
 
 /// <summary>Represents a stream that provides compression or decompression functionality using the RefPack algorithm.</summary>
-/// <param name="stream">The base stream to operate on.</param>
-/// <param name="mode">The mode of the stream.</param>
-/// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
 /// <remarks>The <see cref="RefPackStream"/> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
 [PublicAPI]
-public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
-    : Stream
+public sealed class RefPackStream : Stream
 {
     private bool _disposed;
+    private readonly Stream _stream;
+    private readonly CompressionMode _mode;
+    private readonly bool _leaveOpen;
+
+    /// <summary>Represents a stream that provides compression or decompression functionality using the RefPack algorithm.</summary>
+    /// <param name="stream">The base stream to operate on.</param>
+    /// <param name="mode">The mode of the stream.</param>
+    /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+    /// <remarks>The <see cref="RefPackStream" /> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
+    /// <exception cref="ArgumentException">Thrown when the given <paramref name="stream" /> is not seekable.</exception>
+    public RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
+    }
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value><see langword="true" /> if the stream is in decompression mode (<see cref="CompressionMode.Decompress" />); otherwise, <see langword="false" />.</value>
     /// <remarks>This property returns <see langword="true" /> when the stream is configured for reading (decompression). Attempting to read from the stream when this property is <see langword="false" /> will result in a <see cref="NotSupportedException" />.</remarks>
-    public override bool CanRead => mode is CompressionMode.Decompress && stream.CanRead;
+    public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
 
     /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
     /// <value><see langword="false" /> in all cases as seeking is not supported by the <see cref="RefPackStream" />.</value>
@@ -32,7 +49,7 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
     /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
     /// <value><see langword="true" /> if the stream is in compression mode (<see cref="CompressionMode.Compress" />); otherwise, <see langword="false" />.</value>
     /// <remarks>This property returns <see langword="true" /> when the stream is configured for writing (compression). Attempting to write to the stream when this property is <see langword="false" /> will result in a <see cref="NotSupportedException" />.</remarks>
-    public override bool CanWrite => mode is CompressionMode.Compress && stream.CanWrite;
+    public override bool CanWrite => _mode is CompressionMode.Compress && _stream.CanWrite;
 
     /// <summary>Gets the length of the stream in bytes.</summary>
     /// <value>For compression mode, returns the length of the underlying base stream. For decompression mode, returns the uncompressed size of the stream.</value>
@@ -43,9 +60,9 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            return mode is CompressionMode.Compress
-                ? stream.Length
-                : RefPackDecoderUtilities.GetUncompressedSize(stream);
+            return _mode is CompressionMode.Compress
+                ? _stream.Length
+                : RefPackDecoderUtilities.GetUncompressedSize(_stream);
         }
     }
 
@@ -68,9 +85,9 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
             return;
         }
 
-        if (disposing && !leaveOpen)
+        if (disposing && !_leaveOpen)
         {
-            stream.Dispose();
+            _stream.Dispose();
         }
 
         _disposed = true;
@@ -86,7 +103,7 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
             throw new InvalidOperationException("The stream is not writable.");
         }
 
-        stream.Flush();
+        _stream.Flush();
     }
 
     /// <summary>Reads a sequence of bytes from the current RefPack stream and advances the position within the stream by the number of bytes read.</summary>
@@ -109,13 +126,13 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
             throw new InvalidOperationException("The stream is not readable.");
         }
 
-        if (!RefPackDecoderUtilities.IsRefPack(stream))
+        if (!RefPackDecoderUtilities.IsRefPack(_stream))
         {
             throw new InvalidOperationException("The stream is not a RefPack stream.");
         }
 
-        stream.Position = 0;
-        using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
+        _stream.Position = 0;
+        using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
         return (int)RefPackDecoder.Decode(reader, buffer, offset, count);
     }
 
@@ -161,8 +178,8 @@ public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leav
             return;
         }
 
-        stream.Position = 0;
-        using BinaryWriter writer = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
+        _stream.Position = 0;
+        using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
         RefPackEncoder.Encode(writer, buffer, 0, buffer.Length);
     }
 }
