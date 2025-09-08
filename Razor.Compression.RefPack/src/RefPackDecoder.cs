@@ -40,6 +40,8 @@ internal static class RefPackDecoder
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length, offset + count);
 
+        // Reset the stream to the beginning of the compressed data.
+        reader.BaseStream.Position = 0;
         var uncompressedSize = GetUncompressedSize(reader);
         if (uncompressedSize != RefPackDecoderUtilities.GetUncompressedSize(reader.BaseStream))
         {
