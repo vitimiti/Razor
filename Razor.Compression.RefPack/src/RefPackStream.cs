@@ -126,7 +126,7 @@ public sealed class RefPackStream : Stream
             throw new InvalidOperationException("The stream is not readable.");
         }
 
-        if (!RefPackDecoderUtilities.IsRefPack(_stream))
+        if (!RefPackDecoderUtilities.IsRefPackCompressed(_stream))
         {
             throw new InvalidOperationException("The stream is not a RefPack stream.");
         }

@@ -12,7 +12,7 @@ internal static class RefPackDecoderUtilities
     /// <summary>Checks whether a given stream is RefPack compressed data.</summary>
     /// <param name="stream">The stream to check the compression type.</param>
     /// <returns><see langword="true" /> if the stream is RefPack compressed data, otherwise <see langword="false" />.</returns>
-    public static bool IsRefPack(Stream stream)
+    public static bool IsRefPackCompressed(Stream stream)
     {
         if (stream.Length < 2)
         {
@@ -32,7 +32,7 @@ internal static class RefPackDecoderUtilities
     /// <exception cref="ArgumentOutOfRangeException">When the given <paramref name="stream" /> is too small to contain the uncompressed size.</exception>
     public static uint GetUncompressedSize(Stream stream)
     {
-        if (!IsRefPack(stream))
+        if (!IsRefPackCompressed(stream))
         {
             throw new ArgumentException(
                 "The stream is not RefPack compressed data.",

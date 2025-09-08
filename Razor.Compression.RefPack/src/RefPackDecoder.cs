@@ -31,7 +31,7 @@ internal static class RefPackDecoder
     /// <remarks>This method is created to be used by a <see cref="Stream.Read(byte[],int,int)" /> that has an inner <see cref="BinaryReader" />.</remarks>
     public static long Decode(BinaryReader reader, byte[] buffer, int offset, int count)
     {
-        if (!RefPackDecoderUtilities.IsRefPack(reader.BaseStream))
+        if (!RefPackDecoderUtilities.IsRefPackCompressed(reader.BaseStream))
         {
             throw new ArgumentException("The stream is not a RefPack stream.", nameof(reader));
         }
