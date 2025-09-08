@@ -20,24 +20,6 @@ public sealed class RefPackStream : Stream
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
 
-    /// <summary>Represents a stream that provides compression or decompression functionality using the RefPack algorithm.</summary>
-    /// <param name="stream">The base stream to operate on.</param>
-    /// <param name="mode">The mode of the stream.</param>
-    /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-    /// <remarks>The <see cref="RefPackStream" /> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
-    /// <exception cref="ArgumentException">Thrown when the given <paramref name="stream" /> is not seekable.</exception>
-    public RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-    }
-
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value><see langword="true" /> if the stream is in decompression mode (<see cref="CompressionMode.Decompress" />); otherwise, <see langword="false" />.</value>
     /// <remarks>This property returns <see langword="true" /> when the stream is configured for reading (decompression). Attempting to read from the stream when this property is <see langword="false" /> will result in a <see cref="NotSupportedException" />.</remarks>
@@ -76,6 +58,24 @@ public sealed class RefPackStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
+    }
+
+    /// <summary>Represents a stream that provides compression or decompression functionality using the RefPack algorithm.</summary>
+    /// <param name="stream">The base stream to operate on.</param>
+    /// <param name="mode">The mode of the stream.</param>
+    /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+    /// <remarks>The <see cref="RefPackStream" /> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
+    /// <exception cref="ArgumentException">Thrown when the given <paramref name="stream" /> is not seekable.</exception>
+    public RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
     }
 
     /// <summary>Releases the resources used by the <see cref="RefPackStream"/> instance. Optionally releases the managed resources.</summary>

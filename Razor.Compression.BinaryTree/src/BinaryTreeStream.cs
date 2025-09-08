@@ -18,18 +18,6 @@ public sealed class BinaryTreeStream : Stream
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
 
-    public BinaryTreeStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-    }
-
     public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
     public override bool CanSeek => false;
     public override bool CanWrite => _mode is CompressionMode.Compress && _stream.CanWrite;
@@ -49,6 +37,18 @@ public sealed class BinaryTreeStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
+    }
+
+    public BinaryTreeStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
     }
 
     protected override void Dispose(bool disposing)
