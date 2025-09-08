@@ -276,7 +276,7 @@ public sealed class RefPackStream : Stream
 
         _stream.Position = 0;
         using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        RefPackEncoder.Encode(writer, buffer, 0, buffer.Length);
+        RefPackEncoder.Encode(writer, buffer, offset, buffer.Length);
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)
