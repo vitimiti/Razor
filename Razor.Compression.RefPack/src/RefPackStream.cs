@@ -2,6 +2,7 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO.Compression;
 using Razor.Extensions;
 
 namespace Razor.Compression.RefPack;
@@ -10,15 +11,16 @@ namespace Razor.Compression.RefPack;
 /// <param name="stream">The base stream to operate on.</param>
 /// <param name="mode">The mode of the stream.</param>
 /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="RefPackStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-/// <remarks>The <see cref="RefPackStream"/> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="RefPackMode"/> determines the operation mode for the stream.</remarks>
-public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = false) : Stream
+/// <remarks>The <see cref="RefPackStream"/> class operates on a base stream while either compressing or decompressing data, depending on the specified mode. The <see cref="CompressionMode"/> determines the operation mode for the stream.</remarks>
+public sealed class RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    : Stream
 {
     private bool _disposed;
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-    /// <value><see langword="true" /> if the stream is in decompression mode (<see cref="RefPackMode.Decompression" />); otherwise, <see langword="false" />.</value>
+    /// <value><see langword="true" /> if the stream is in decompression mode (<see cref="CompressionMode.Decompress" />); otherwise, <see langword="false" />.</value>
     /// <remarks>This property returns <see langword="true" /> when the stream is configured for reading (decompression). Attempting to read from the stream when this property is <see langword="false" /> will result in a <see cref="NotSupportedException" />.</remarks>
-    public override bool CanRead => mode is RefPackMode.Decompression;
+    public override bool CanRead => mode is CompressionMode.Decompress && stream.CanRead;
 
     /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
     /// <value><see langword="false" /> in all cases as seeking is not supported by the <see cref="RefPackStream" />.</value>
@@ -26,9 +28,9 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
     public override bool CanSeek => false;
 
     /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-    /// <value><see langword="true" /> if the stream is in compression mode (<see cref="RefPackMode.Compression" />); otherwise, <see langword="false" />.</value>
+    /// <value><see langword="true" /> if the stream is in compression mode (<see cref="CompressionMode.Compress" />); otherwise, <see langword="false" />.</value>
     /// <remarks>This property returns <see langword="true" /> when the stream is configured for writing (compression). Attempting to write to the stream when this property is <see langword="false" /> will result in a <see cref="NotSupportedException" />.</remarks>
-    public override bool CanWrite => mode is RefPackMode.Compression;
+    public override bool CanWrite => mode is CompressionMode.Compress && stream.CanWrite;
 
     /// <summary>Gets the length of the stream in bytes.</summary>
     /// <value>For compression mode, returns the length of the underlying base stream. For decompression mode, returns the uncompressed size of the stream.</value>
@@ -37,13 +39,11 @@ public class RefPackStream(Stream stream, RefPackMode mode, bool leaveOpen = fal
     {
         get
         {
-            if (mode is RefPackMode.Compression)
-            {
-                return stream.Length;
-            }
-
             ObjectDisposedException.ThrowIf(_disposed, this);
-            return RefPackDecoderUtilities.GetUncompressedSize(stream);
+
+            return mode is CompressionMode.Compress
+                ? stream.Length
+                : RefPackDecoderUtilities.GetUncompressedSize(stream);
         }
     }
 
