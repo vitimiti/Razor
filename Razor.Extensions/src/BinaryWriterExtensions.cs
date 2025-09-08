@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
 /// <summary>Extensions for the <see cref="BinaryWriter" /> class.</summary>
+[PublicAPI]
 public static class BinaryWriterExtensions
 {
     /// <summary>Writes 2 bytes in big-endian form.</summary>

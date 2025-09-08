@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" PrivateAssets="all" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.8" />
   </ItemGroup>
 </Project>
