@@ -42,7 +42,7 @@ internal static class RefPackDecoder
 
         // Reset the stream to the beginning of the compressed data.
         reader.BaseStream.Position = 0;
-        var uncompressedSize = GetUncompressedSize(reader, out var sizePosition);
+        var uncompressedSize = GetUncompressedSize(reader);
         if (uncompressedSize != RefPackDecoderUtilities.GetUncompressedSize(reader.BaseStream))
         {
             throw new InvalidOperationException(
@@ -50,8 +50,8 @@ internal static class RefPackDecoder
             );
         }
 
-        // Reset the stream to the correct position.
-        reader.BaseStream.Position = sizePosition;
+        // Don't write the uncompressed size to the buffer.
+        // Start writing from the current stream position onwards.
         var toWrite = uint.Min((uint)count, uncompressedSize);
         var startOffset = offset;
 
@@ -94,9 +94,8 @@ internal static class RefPackDecoder
 
     /// <summary>Gets the uncompressed size from the RefPack compressed reader.</summary>
     /// <param name="reader">The reader that holds the RefPack compressed data.</param>
-    /// <param name="finalPosition">The final position of the reader after reading the uncompressed size.</param>
     /// <returns>A new <see cref="uint" /> with the uncompressed size.</returns>
-    private static uint GetUncompressedSize(BinaryReader reader, out long finalPosition)
+    private static uint GetUncompressedSize(BinaryReader reader)
     {
         var type = reader.ReadUInt16BigEndian();
         var bytesToRead = (type & 0x8000) != 0 ? 4 : 3;
@@ -108,7 +107,6 @@ internal static class RefPackDecoder
         }
 
         var length = bytesToRead == 4 ? reader.ReadUInt32BigEndian() : reader.ReadUInt24BigEndian();
-        finalPosition = reader.BaseStream.Position;
         return length;
     }
 

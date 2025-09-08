@@ -24,8 +24,7 @@ internal static class BinaryTreeDecoder
 
         // Reset the stream to the beginning of the compressed data.
         reader.BaseStream.Position = 0;
-        var uncompressedSize = GetUncompressedSize(reader, out var sizePosition);
-
+        var uncompressedSize = GetUncompressedSize(reader);
         if (uncompressedSize != BinaryTreeDecoderUtilities.GetUncompressedSize(reader.BaseStream))
         {
             throw new InvalidOperationException(
@@ -33,8 +32,8 @@ internal static class BinaryTreeDecoder
             );
         }
 
-        // Reset the stream to the correct position.
-        reader.BaseStream.Position = sizePosition;
+        // Don't write the uncompressed size to the buffer.
+        // Start writing from the current stream position onwards.
         var toWrite = uint.Min((uint)count, uncompressedSize);
         var startOffset = offset;
 
@@ -82,7 +81,7 @@ internal static class BinaryTreeDecoder
         return offset - startOffset;
     }
 
-    private static uint GetUncompressedSize(BinaryReader reader, out long finalPosition)
+    private static uint GetUncompressedSize(BinaryReader reader)
     {
         var packType = reader.ReadUInt16BigEndian();
         if (packType is 0x47FB)
@@ -92,7 +91,6 @@ internal static class BinaryTreeDecoder
         }
 
         var length = reader.ReadUInt24BigEndian();
-        finalPosition = reader.BaseStream.Position;
         return length;
     }
 
