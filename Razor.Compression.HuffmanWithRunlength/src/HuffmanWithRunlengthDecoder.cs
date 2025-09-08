@@ -26,21 +26,25 @@ internal static class HuffmanWithRunlengthDecoder
 
         // Reset the stream to the beginning of the compressed data.
         reader.BaseStream.Position = 0;
-        var compressedLen = checked((int)reader.BaseStream.Length);
-        var compressed = reader.ReadBytes(compressedLen);
+        var compressed = reader.ReadBytes((int)reader.BaseStream.Length);
         var decompressed = Decompress(compressed, out var actualUncompressedSize);
+        var expectedSize = HuffmanWithRunlengthDecoderUtilities.GetUncompressedSize(
+            reader.BaseStream
+        );
+
         if (
-            actualUncompressedSize
-            != HuffmanWithRunlengthDecoderUtilities.GetUncompressedSize(reader.BaseStream)
+            actualUncompressedSize != expectedSize
+            || actualUncompressedSize != decompressed.Length
+            || decompressed.Length != expectedSize
         )
         {
             throw new InvalidOperationException(
-                "The uncompressed size does not match the expected value."
+                $"The uncompressed size of {actualUncompressedSize} ({actualUncompressedSize}) bytes does not match the expected value of {expectedSize} bytes."
             );
         }
 
-        // Don't write the uncompressed size to the buffer.
-        // Start writing from the current stream position onwards.
+        // The original code decompresses everything, and then it copies it into
+        // the destination buffer, so we do the same.
         var toWrite = int.Min(count, (int)actualUncompressedSize);
         var startOffset = offset;
 

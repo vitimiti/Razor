@@ -25,10 +25,11 @@ internal static class BinaryTreeDecoder
         // Reset the stream to the beginning of the compressed data.
         reader.BaseStream.Position = 0;
         var uncompressedSize = GetUncompressedSize(reader);
-        if (uncompressedSize != BinaryTreeDecoderUtilities.GetUncompressedSize(reader.BaseStream))
+        var expectedSize = BinaryTreeDecoderUtilities.GetUncompressedSize(reader.BaseStream);
+        if (uncompressedSize != expectedSize)
         {
             throw new InvalidOperationException(
-                "The uncompressed size does not match the expected value."
+                $"The uncompressed size of {uncompressedSize} bytes does not match the expected value of {expectedSize} bytes."
             );
         }
 
