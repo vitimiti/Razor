@@ -39,10 +39,9 @@ internal static class BinaryTreeDecoderUtilities
         stream.Position = 0;
         using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
-        var offset = packType is 0x46FB ? 2 : 5;
 
         // Create an offset
-        _ = reader.ReadBytes(offset);
+        _ = reader.ReadBytes(packType is 0x46FB ? 2 : 5);
         return reader.ReadUInt24BigEndian();
     }
 }
