@@ -9,6 +9,9 @@ namespace Razor.Compression.RefPack;
 /// <summary>Utilities for the RefPack file format.</summary>
 internal static class RefPackDecoderUtilities
 {
+    // csharpier-ignore
+    private static ushort[] ValidPackTypes => [0x10FB, 0x11FB, 0x90FB, 0x91FB];
+
     /// <summary>Checks whether a given stream is RefPack compressed data.</summary>
     /// <param name="stream">The stream to check the compression type.</param>
     /// <returns><see langword="true" /> if the stream is RefPack compressed data, otherwise <see langword="false" />.</returns>
@@ -22,7 +25,7 @@ internal static class RefPackDecoderUtilities
         stream.Position = 0;
         using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
-        return packType is 0x10FB or 0x11FB or 0x90FB or 0x91FB;
+        return ValidPackTypes.Contains(packType);
     }
 
     /// <summary>Gets the uncompressed size of the given RefPack compressed stream.</summary>

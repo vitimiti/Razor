@@ -8,6 +8,9 @@ namespace Razor.Compression.BinaryTree;
 
 internal static class BinaryTreeDecoderUtilities
 {
+    // csharpier-ignore
+    private static ushort[] ValidPackTypes => [0x46FB, 0x47FB];
+
     public static bool IsBinaryTreeCompressed(Stream stream)
     {
         if (stream.Length < 2)
@@ -18,7 +21,7 @@ internal static class BinaryTreeDecoderUtilities
         stream.Position = 0;
         using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
-        return packType is 0x46FB or 0x47FB;
+        return ValidPackTypes.Contains(packType);
     }
 
     public static uint GetUncompressedSize(Stream stream)
