@@ -2,6 +2,8 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using JetBrains.Annotations;
 using Razor.Extensions;
@@ -94,6 +96,11 @@ public sealed class RefPackStream : Stream
         base.Dispose(disposing);
     }
 
+    ~RefPackStream()
+    {
+        Dispose(disposing: false);
+    }
+
     /// <summary>Clears all buffers for the underlying stream and causes any buffered data to be written to the underlying device.</summary>
     /// <exception cref="InvalidOperationException">Thrown when the stream is not writable.</exception>
     public override void Flush()
@@ -104,6 +111,23 @@ public sealed class RefPackStream : Stream
         }
 
         _stream.Flush();
+    }
+
+    public override Task FlushAsync(CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        return Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Flush();
+            },
+            cancellationToken
+        );
     }
 
     /// <summary>Reads a sequence of bytes from the current RefPack stream and advances the position within the stream by the number of bytes read.</summary>
@@ -134,6 +158,78 @@ public sealed class RefPackStream : Stream
         _stream.Position = 0;
         using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
         return (int)RefPackDecoder.Decode(reader, buffer, offset, count);
+    }
+
+    public override int Read(Span<byte> buffer)
+    {
+        return Read(buffer.ToArray(), 0, buffer.Length);
+    }
+
+    public override Task<int> ReadAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<int>(cancellationToken);
+        }
+
+        return Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Read(buffer, offset, count);
+            },
+            cancellationToken
+        );
+    }
+
+    public override ValueTask<int> ReadAsync(
+        Memory<byte> buffer,
+        CancellationToken cancellationToken = new CancellationToken()
+    )
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled<int>(cancellationToken);
+        }
+
+        var task = Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                try
+                {
+                    var read = Read(rented, 0, buffer.Length);
+                    new ReadOnlySpan<byte>(rented, 0, read).CopyTo(buffer.Span);
+                    return read;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            },
+            cancellationToken
+        );
+
+        return new ValueTask<int>(task);
+    }
+
+    public override int ReadByte()
+    {
+        throw new NotSupportedException("Reading a single byte is not supported.");
     }
 
     /// <summary>Sets the position within the current stream. This operation is not supported for <see cref="RefPackStream" />.</summary>
@@ -181,5 +277,82 @@ public sealed class RefPackStream : Stream
         _stream.Position = 0;
         using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
         RefPackEncoder.Encode(writer, buffer, 0, buffer.Length);
+    }
+
+    public override void Write(ReadOnlySpan<byte> buffer)
+    {
+        Write(buffer.ToArray(), 0, buffer.Length);
+    }
+
+    public override Task WriteAsync(
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken
+    )
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        return Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Write(buffer, offset, count);
+            },
+            cancellationToken
+        );
+    }
+
+    public override ValueTask WriteAsync(
+        ReadOnlyMemory<byte> buffer,
+        CancellationToken cancellationToken = new CancellationToken()
+    )
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled(cancellationToken);
+        }
+
+        var task = Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Write(buffer.Span);
+            },
+            cancellationToken
+        );
+
+        return new ValueTask(task);
+    }
+
+    public override void WriteByte(byte value)
+    {
+        throw new NotSupportedException("Writing a single byte is not supported.");
+    }
+
+    [SuppressMessage(
+        "csharpsquid",
+        "S3971:\"GC.SuppressFinalize\" should not be called",
+        Justification = "Follow Stream standards."
+    )]
+    [SuppressMessage(
+        "Usage",
+        "CA1816:Dispose methods should call SuppressFinalize",
+        Justification = "Follow Stream standards."
+    )]
+    public override void Close()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }
