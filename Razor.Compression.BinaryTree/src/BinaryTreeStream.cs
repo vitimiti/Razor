@@ -22,9 +22,13 @@ public sealed class BinaryTreeStream : Stream
     private int _decodedLength;
     private int _readPosition;
 
-    public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
+    public override bool CanRead =>
+        !_disposed && _mode is CompressionMode.Decompress && _stream.CanRead;
+
     public override bool CanSeek => false;
-    public override bool CanWrite => _mode is CompressionMode.Compress && _stream.CanWrite;
+
+    public override bool CanWrite =>
+        !_disposed && _mode is CompressionMode.Compress && _stream.CanWrite;
 
     public override long Length
     {
