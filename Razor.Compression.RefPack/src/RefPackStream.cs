@@ -2,7 +2,6 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using JetBrains.Annotations;
@@ -13,10 +12,17 @@ namespace Razor.Compression.RefPack;
 [PublicAPI]
 public sealed class RefPackStream : Stream
 {
-    private bool _disposed;
     private readonly Stream _stream;
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
+    private readonly MemoryStream? _writeBuffer;
+
+    private bool _disposed;
+    private byte[]? _decodedBuffer;
+    private int _decodedLength;
+    private int _decodedReadPosition;
+    private bool _decodedInitialized;
+    private bool _encodedWritten;
 
     public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
 
@@ -52,6 +58,10 @@ public sealed class RefPackStream : Stream
         _stream = stream;
         _mode = mode;
         _leaveOpen = leaveOpen;
+        if (_mode is CompressionMode.Compress)
+        {
+            _writeBuffer = new MemoryStream();
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -59,6 +69,12 @@ public sealed class RefPackStream : Stream
         if (_disposed)
         {
             return;
+        }
+
+        if (disposing && _mode is CompressionMode.Compress)
+        {
+            // Ensure we encode and write once before closing.
+            EnsureCompressedWritten();
         }
 
         if (disposing && !_leaveOpen)
@@ -82,6 +98,7 @@ public sealed class RefPackStream : Stream
             throw new InvalidOperationException("The stream is not writable.");
         }
 
+        EnsureCompressedWritten();
         _stream.Flush();
     }
 
@@ -114,19 +131,39 @@ public sealed class RefPackStream : Stream
             throw new InvalidOperationException("The stream is not readable.");
         }
 
-        if (!RefPackDecoderUtilities.IsRefPackCompressed(_stream))
+        EnsureDecoded();
+
+        var remaining = _decodedLength - _decodedReadPosition;
+        if (remaining <= 0)
         {
-            throw new InvalidOperationException("The stream is not a RefPack stream.");
+            return 0; // EOF
         }
 
-        _stream.Position = 0;
-        using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        return (int)RefPackDecoder.Decode(reader, buffer, offset, count);
+        var toCopy = Math.Min(count, remaining);
+        Buffer.BlockCopy(_decodedBuffer!, _decodedReadPosition, buffer, offset, toCopy);
+        _decodedReadPosition += toCopy;
+        return toCopy;
     }
 
     public override int Read(Span<byte> buffer)
     {
-        return Read(buffer.ToArray(), 0, buffer.Length);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!CanRead)
+        {
+            throw new InvalidOperationException("The stream is not readable.");
+        }
+
+        EnsureDecoded();
+        var remaining = _decodedLength - _decodedReadPosition;
+        if (remaining <= 0)
+        {
+            return 0;
+        }
+
+        var toCopy = Math.Min(buffer.Length, remaining);
+        new ReadOnlySpan<byte>(_decodedBuffer!, _decodedReadPosition, toCopy).CopyTo(buffer);
+        _decodedReadPosition += toCopy;
+        return toCopy;
     }
 
     public override Task<int> ReadAsync(
@@ -168,27 +205,16 @@ public sealed class RefPackStream : Stream
             return ValueTask.FromCanceled<int>(cancellationToken);
         }
 
-        var task = Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                try
+        return new ValueTask<int>(
+            Task.Run(
+                () =>
                 {
-                    var read = Read(rented, 0, buffer.Length);
-                    new ReadOnlySpan<byte>(rented, 0, read).CopyTo(buffer.Span);
-                    return read;
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(rented);
-                }
-            },
-            cancellationToken
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Read(buffer.Span);
+                },
+                cancellationToken
+            )
         );
-
-        return new ValueTask<int>(task);
     }
 
     public override int ReadByte()
@@ -206,13 +232,6 @@ public sealed class RefPackStream : Stream
         throw new NotSupportedException("Setting the length is not supported.");
     }
 
-    /// <summary>Writes a sequence of bytes to the current stream and advances the position within the stream by the number of bytes written.</summary>
-    /// <param name="buffer">The byte array that contains the data to write to the stream.</param>
-    /// <param name="offset">The zero-based byte offset in the <paramref name="buffer"/> at which to begin copying bytes to the stream.</param>
-    /// <param name="count">The maximum number of bytes to write to the stream.</param>
-    /// <exception cref="ObjectDisposedException">Thrown if the stream has been disposed.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative, or if the sum of <paramref name="offset"/> and <paramref name="count"/> exceeds the length of the <paramref name="buffer"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown if the stream is not writable.</exception>
     public override void Write(byte[] buffer, int offset, int count)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -230,14 +249,24 @@ public sealed class RefPackStream : Stream
             return;
         }
 
-        _stream.Position = 0;
-        using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        RefPackEncoder.Encode(writer, buffer, offset, buffer.Length);
+        // Accumulate uncompressed bytes to encode later on Flush/Dispose.
+        _writeBuffer!.Write(buffer, offset, count);
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)
     {
-        Write(buffer.ToArray(), 0, buffer.Length);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!CanWrite)
+        {
+            throw new InvalidOperationException("The stream is not writable.");
+        }
+
+        if (buffer.Length == 0)
+        {
+            return;
+        }
+
+        _writeBuffer!.Write(buffer);
     }
 
     public override Task WriteAsync(
@@ -279,16 +308,16 @@ public sealed class RefPackStream : Stream
             return ValueTask.FromCanceled(cancellationToken);
         }
 
-        var task = Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                Write(buffer.Span);
-            },
-            cancellationToken
+        return new ValueTask(
+            Task.Run(
+                () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Write(buffer.Span);
+                },
+                cancellationToken
+            )
         );
-
-        return new ValueTask(task);
     }
 
     public override void WriteByte(byte value)
@@ -310,5 +339,57 @@ public sealed class RefPackStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    private void EnsureDecoded()
+    {
+        if (_decodedInitialized)
+        {
+            return;
+        }
+
+        if (!RefPackDecoderUtilities.IsRefPackCompressed(_stream))
+        {
+            throw new InvalidOperationException("The stream is not a RefPack stream.");
+        }
+
+        _stream.Position = 0;
+        using var reader = new BinaryReader(_stream, EncodingExtensions.Ansi, leaveOpen: true);
+
+        var expected = RefPackDecoderUtilities.GetUncompressedSize(_stream);
+        _decodedBuffer = new byte[expected];
+        _decodedLength = (int)RefPackDecoder.Decode(reader, _decodedBuffer, 0, (int)expected);
+        _decodedReadPosition = 0;
+        _decodedInitialized = true;
+    }
+
+    private void EnsureCompressedWritten()
+    {
+        if (_encodedWritten || _writeBuffer is null)
+        {
+            return;
+        }
+
+        // Prepare base stream for write
+        _stream.Position = 0;
+        using var writer = new BinaryWriter(_stream, EncodingExtensions.Ansi, leaveOpen: true);
+
+        if (_writeBuffer.TryGetBuffer(out ArraySegment<byte> seg))
+        {
+            RefPackEncoder.Encode(writer, seg.Array!, seg.Offset, seg.Count);
+        }
+        else
+        {
+            var data = _writeBuffer.ToArray();
+            RefPackEncoder.Encode(writer, data, 0, data.Length);
+        }
+
+        // Truncate any old content beyond current position
+        if (_stream.CanSeek && _stream.CanWrite)
+        {
+            _stream.SetLength(_stream.Position);
+        }
+
+        _encodedWritten = true;
     }
 }

@@ -149,7 +149,6 @@ internal static class RefPackDecoder
         return true;
     }
 
-    /// <exception cref="EndOfStreamException">Thrown when an unexpected end of stream occurs while reading the compressed data.</exception>
     private static bool TryAndProcessIntForm(
         BinaryReader reader,
         byte first,
@@ -207,16 +206,6 @@ internal static class RefPackDecoder
         return true;
     }
 
-    /// <summary>Attempts to process a "very int form" encoding in the RefPack compressed data.</summary>
-    /// <param name="reader">The binary reader to read the compressed data.</param>
-    /// <param name="first">The first byte of the current encoding to evaluate.</param>
-    /// <param name="buffer">The buffer to write the decompressed data to.</param>
-    /// <param name="offset">A reference to the current offset in the buffer where data is to be written.</param>
-    /// <param name="remaining">The number of bytes remaining to be processed in the buffer.</param>
-    /// <returns><see langword="true" /> if the form was processed, otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the given <paramref name="offset" /> or <paramref name="remaining" /> is negative or when the given <paramref name="offset" /> + <paramref name="remaining" /> is greater than the length of the given <paramref name="buffer" />.</exception>
-    /// <exception cref="InvalidDataException">Thrown when the compressed data contains invalid literal runs, back-references, or copy lengths.</exception>
-    /// <exception cref="EndOfStreamException">Thrown when an unexpected end of stream occurs while reading the compressed data.</exception>
     private static bool TryAndProcessVeryIntForm(
         BinaryReader reader,
         byte first,
@@ -275,16 +264,6 @@ internal static class RefPackDecoder
         return true;
     }
 
-    /// <summary>Attempts to process a literal run encoding in the RefPack compressed data.</summary>
-    /// <param name="reader">The binary reader to read the compressed data.</param>
-    /// <param name="first">The first byte of the current encoding to evaluate.</param>
-    /// <param name="buffer">The buffer to write the decompressed data to.</param>
-    /// <param name="offset">A reference to the current offset in the buffer where data is to be written.</param>
-    /// <param name="remaining">The number of bytes remaining to be processed in the buffer.</param>
-    /// <returns><see langword="true" /> if the literal run was processed, otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the given <paramref name="offset" /> or <paramref name="remaining" /> is negative or when the given <paramref name="offset" /> + <paramref name="remaining" /> is greater than the length of the given <paramref name="buffer" />.</exception>
-    /// <exception cref="InvalidDataException">Thrown when the compressed data contains invalid literal runs, back-references, or copy lengths.</exception>
-    /// <exception cref="EndOfStreamException">Thrown when an unexpected end of stream occurs while reading the compressed data.</exception>
     private static bool TryAndProcessLiteralRun(
         BinaryReader reader,
         byte first,
@@ -321,14 +300,6 @@ internal static class RefPackDecoder
         return true;
     }
 
-    /// <summary>Processes the end of file literal run in the RefPack compressed data.</summary>
-    /// <param name="reader">The reader containing the RefPack compressed data.</param>
-    /// <param name="buffer">The buffer where the decompressed data will be written.</param>
-    /// <param name="first">The first byte of the current RefPack literal run.</param>
-    /// <param name="offset">The current offset in the buffer where data will be written.</param>
-    /// <param name="remaining">The number of bytes remaining to be processed in the buffer.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the given <paramref name="offset" /> or the given <paramref name="remaining" /> are negative, or when the given <paramref name="offset" /> is greater than the length of the given <paramref name="buffer" />.</exception>
-    /// <exception cref="EndOfStreamException">Thrown when the end of the stream is unexpectedly reached while processing the literal run.</exception>
     private static void ProcessEofLiteralRun(
         BinaryReader reader,
         byte[] buffer,

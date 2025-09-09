@@ -16,16 +16,15 @@ internal static class RefPackEncoder
 
         // Reset the stream to the beginning of the compressed data.
         writer.BaseStream.Position = 0;
-        var uncompressedLength = buffer.Length;
-        if (uncompressedLength > 0xFFFFFF)
+        if (count > 0xFFFFFF)
         {
             writer.WriteUInt16BigEndian(0x90FB);
-            writer.WriteUInt32BigEndian((uint)uncompressedLength);
+            writer.WriteUInt32BigEndian((uint)count);
         }
         else
         {
             writer.WriteUInt16BigEndian(0x10FB);
-            writer.WriteUInt24BigEndian((uint)uncompressedLength);
+            writer.WriteUInt24BigEndian((uint)count);
         }
 
         RefCompress(writer, buffer, offset, count);
@@ -232,13 +231,6 @@ internal static class RefPackEncoder
         literalRun = 0;
     }
 
-    /// <summary>Updates the hash chains and the linked list used for finding matches during the compression process after a match has been found and processed.</summary>
-    /// <param name="source">The input buffer containing the data being compressed.</param>
-    /// <param name="cPtr">A reference to the current pointer in the buffer indicating the position being processed.</param>
-    /// <param name="fromStart">The starting offset within the input buffer, used as a reference for calculating positions.</param>
-    /// <param name="bLength">The length of the match for which the hash chains need to be updated.</param>
-    /// <param name="hashTable">The hash table used for quick lookup of recent positions for matches.</param>
-    /// <param name="link">The linked list structure storing previous positions mapped to specific hashes, enabling the chaining process for match discovery.</param>
     private static void UpdateHashChainsAfterMatch(
         byte[] source,
         ref int cPtr,
@@ -258,12 +250,6 @@ internal static class RefPackEncoder
         }
     }
 
-    /// <summary>Compresses data using the RefPack compression algorithm and writes the compressed output to the provided binary writer.</summary>
-    /// <param name="writer">The <see cref="BinaryWriter" /> used to write the compressed data.</param>
-    /// <param name="buffer">The input buffer containing the data to be compressed.</param>
-    /// <param name="offset">The zero-based byte offset in the buffer at which to begin compression.</param>
-    /// <param name="count">The number of bytes to compress starting from the specified offset.</param>
-    /// <exception cref="System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative, or if the sum of <paramref name="offset"/> and <paramref name="count"/> exceeds the length of <paramref name="buffer"/>.</exception>
     private static void RefCompress(BinaryWriter writer, byte[] buffer, int offset, int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
