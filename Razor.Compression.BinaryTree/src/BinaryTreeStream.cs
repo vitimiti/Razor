@@ -13,14 +13,19 @@ namespace Razor.Compression.BinaryTree;
 [PublicAPI]
 public sealed class BinaryTreeStream : Stream
 {
-    private bool _disposed;
     private readonly Stream _stream;
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
 
+    private bool _disposed;
+    private byte[]? _decodedBuffer;
+    private int _decodedLength;
+    private int _readPosition;
+
     public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
     public override bool CanSeek => false;
     public override bool CanWrite => _mode is CompressionMode.Compress && _stream.CanWrite;
+
     public override long Length
     {
         get
@@ -63,6 +68,14 @@ public sealed class BinaryTreeStream : Stream
             _stream.Dispose();
         }
 
+        if (_decodedBuffer is not null)
+        {
+            ArrayPool<byte>.Shared.Return(_decodedBuffer);
+            _decodedBuffer = null;
+            _decodedLength = 0;
+            _readPosition = 0;
+        }
+
         _disposed = true;
         base.Dispose(disposing);
     }
@@ -74,12 +87,13 @@ public sealed class BinaryTreeStream : Stream
 
     public override void Flush()
     {
-        if (!CanWrite)
-        {
-            throw new InvalidOperationException("The stream is not writable.");
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _stream.Flush();
+        // For read mode, Flush should be a no-op.
+        if (CanWrite)
+        {
+            _stream.Flush();
+        }
     }
 
     public override Task FlushAsync(CancellationToken cancellationToken)
@@ -111,19 +125,39 @@ public sealed class BinaryTreeStream : Stream
             throw new InvalidOperationException("The stream is not readable.");
         }
 
-        if (!BinaryTreeDecoderUtilities.IsBinaryTreeCompressed(_stream))
+        EnsureDecoded();
+
+        if (_readPosition >= _decodedLength)
         {
-            throw new InvalidOperationException("The stream is not a RefPack stream.");
+            return 0; // EOF
         }
 
-        _stream.Position = 0;
-        using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        return (int)BinaryTreeDecoder.Decode(reader, buffer, offset, count);
+        var toCopy = Math.Min(count, _decodedLength - _readPosition);
+        Buffer.BlockCopy(_decodedBuffer!, _readPosition, buffer, offset, toCopy);
+        _readPosition += toCopy;
+        return toCopy;
     }
 
     public override int Read(Span<byte> buffer)
     {
-        return Read(buffer.ToArray(), 0, buffer.Length);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!CanRead)
+        {
+            throw new InvalidOperationException("The stream is not readable.");
+        }
+
+        EnsureDecoded();
+
+        if (_readPosition >= _decodedLength)
+        {
+            return 0; // EOF
+        }
+
+        var toCopy = Math.Min(buffer.Length, _decodedLength - _readPosition);
+        new ReadOnlySpan<byte>(_decodedBuffer!, _readPosition, toCopy).CopyTo(buffer);
+        _readPosition += toCopy;
+        return toCopy;
     }
 
     public override Task<int> ReadAsync(
@@ -165,27 +199,17 @@ public sealed class BinaryTreeStream : Stream
             return ValueTask.FromCanceled<int>(cancellationToken);
         }
 
-        var task = Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                try
+        // Lightweight async wrapper since decoding is done on first use and cached.
+        return new ValueTask<int>(
+            Task.Run(
+                () =>
                 {
-                    var read = Read(rented, 0, buffer.Length);
-                    new ReadOnlySpan<byte>(rented, 0, read).CopyTo(buffer.Span);
-                    return read;
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(rented);
-                }
-            },
-            cancellationToken
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Read(buffer.Span);
+                },
+                cancellationToken
+            )
         );
-
-        return new ValueTask<int>(task);
     }
 
     public override int ReadByte()
@@ -217,17 +241,46 @@ public sealed class BinaryTreeStream : Stream
 
         if (count == 0)
         {
+            // Truncate to zero-length compressed content
+            _stream.SetLength(0);
             return;
         }
 
+        // Overwrite from start and truncate to the compressed output length.
         _stream.Position = 0;
         using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        BinaryTreeEncoder.Encode(writer, buffer, offset, buffer.Length);
+
+        // Encode only the requested slice.
+        BinaryTreeEncoder.Encode(writer, buffer, offset, count);
+
+        // Ensure underlying stream length matches the actual compressed data produced.
+        _stream.Flush();
+        _stream.SetLength(_stream.Position);
+        _stream.Position = 0;
+
+        // Invalidate any previous decoded cache as data changed.
+        if (_decodedBuffer is not null)
+        {
+            ArrayPool<byte>.Shared.Return(_decodedBuffer);
+            _decodedBuffer = null;
+            _decodedLength = 0;
+            _readPosition = 0;
+        }
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)
     {
-        Write(buffer.ToArray(), 0, buffer.Length);
+        // Delegate to byte[] overload without extra allocation by renting.
+        var rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
+        try
+        {
+            buffer.CopyTo(rented);
+            Write(rented, 0, buffer.Length);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 
     public override Task WriteAsync(
@@ -300,5 +353,37 @@ public sealed class BinaryTreeStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    private void EnsureDecoded()
+    {
+        if (_decodedBuffer is not null)
+        {
+            return;
+        }
+
+        // Validate header and decode entire payload once.
+        if (!BinaryTreeDecoderUtilities.IsBinaryTreeCompressed(_stream))
+        {
+            throw new InvalidOperationException("The stream is not a BinaryTree stream.");
+        }
+
+        // Determine uncompressed size and allocate buffer.
+        var uncompressedSize = BinaryTreeDecoderUtilities.GetUncompressedSize(_stream);
+
+        var buffer = ArrayPool<byte>.Shared.Rent(checked((int)uncompressedSize));
+
+        // Reset and decode fully into buffer.
+        _stream.Position = 0;
+        using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
+
+        var decoded = (int)BinaryTreeDecoder.Decode(reader, buffer, 0, (int)uncompressedSize);
+
+        _decodedBuffer = buffer;
+        _decodedLength = decoded;
+        _readPosition = 0;
+
+        // After decoding, keep underlying position at 0 for consistency.
+        _stream.Position = 0;
     }
 }
