@@ -349,6 +349,11 @@ public sealed class BinaryTreeStream : Stream
         "CA1816:Dispose methods should call SuppressFinalize",
         Justification = "Follow Stream standards."
     )]
+    [SuppressMessage(
+        "ReSharper",
+        "GCSuppressFinalizeForTypeWithoutDestructor",
+        Justification = "Follow Stream standards."
+    )]
     public override void Close()
     {
         Dispose(disposing: true);
