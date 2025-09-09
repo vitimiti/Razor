@@ -4,7 +4,7 @@
 
 namespace Razor.Compression.LightZhl;
 
-internal readonly struct MatchOverItem(int numberOfExtraBits, int @base)
+internal readonly struct DecodingMatchOverItem(int numberOfExtraBits, int @base)
 {
     public readonly int NumberOfExtraBits = numberOfExtraBits;
     public readonly int Base = @base;

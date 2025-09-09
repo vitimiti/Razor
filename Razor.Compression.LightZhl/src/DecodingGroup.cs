@@ -4,7 +4,7 @@
 
 namespace Razor.Compression.LightZhl;
 
-internal readonly struct Group(int numberOfBits, int position)
+internal readonly struct DecodingGroup(int numberOfBits, int position)
 {
     public readonly int NumberOfBits = numberOfBits;
     public readonly int Position = position;

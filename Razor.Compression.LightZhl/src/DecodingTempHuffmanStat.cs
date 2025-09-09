@@ -4,22 +4,22 @@
 
 namespace Razor.Compression.LightZhl;
 
-internal readonly struct TempHuffmanStat(short i, short n)
-    : IComparable<TempHuffmanStat>,
+internal readonly struct DecodingTempHuffmanStat(short i, short n)
+    : IComparable<DecodingTempHuffmanStat>,
         IComparable,
-        IEquatable<TempHuffmanStat>
+        IEquatable<DecodingTempHuffmanStat>
 {
     public readonly short I = i;
     private readonly short _n = n;
 
-    public bool Equals(TempHuffmanStat other)
+    public bool Equals(DecodingTempHuffmanStat other)
     {
         return I == other.I && _n == other._n;
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is TempHuffmanStat other && Equals(other);
+        return obj is DecodingTempHuffmanStat other && Equals(other);
     }
 
     public override int GetHashCode()
@@ -27,7 +27,7 @@ internal readonly struct TempHuffmanStat(short i, short n)
         return HashCode.Combine(I, _n);
     }
 
-    public int CompareTo(TempHuffmanStat other)
+    public int CompareTo(DecodingTempHuffmanStat other)
     {
         // Descendent by n, then descendent by i
         var compare = other._n - _n;
@@ -46,37 +46,37 @@ internal readonly struct TempHuffmanStat(short i, short n)
             return 1;
         }
 
-        return obj is TempHuffmanStat other
+        return obj is DecodingTempHuffmanStat other
             ? CompareTo(other)
-            : throw new ArgumentException($"Object must be of type {nameof(TempHuffmanStat)}");
+            : throw new ArgumentException($"Object must be of type {nameof(DecodingTempHuffmanStat)}");
     }
 
-    public static bool operator ==(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator ==(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) == 0;
     }
 
-    public static bool operator !=(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator !=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) != 0;
     }
 
-    public static bool operator <(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator <(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) < 0;
     }
 
-    public static bool operator >(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator >(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) > 0;
     }
 
-    public static bool operator <=(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator <=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) <= 0;
     }
 
-    public static bool operator >=(TempHuffmanStat left, TempHuffmanStat right)
+    public static bool operator >=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
     {
         return left.CompareTo(right) >= 0;
     }

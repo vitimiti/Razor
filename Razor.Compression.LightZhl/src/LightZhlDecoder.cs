@@ -12,7 +12,7 @@ internal sealed class LightZhlDecoder
     private const int Min = 4;
     private const int SymbolsCount = 256 + 16 + 2;
 
-    private readonly Group[] _groupTable = new Group[16];
+    private readonly DecodingGroup[] _groupTable = new DecodingGroup[16];
     private readonly short[] _symbolTable = new short[SymbolsCount];
     private readonly short[] _stat = new short[SymbolsCount];
     private readonly byte[] _buf = new byte[BufferSize];
@@ -39,20 +39,20 @@ internal sealed class LightZhlDecoder
     ];
 
     // csharpier-ignore
-    private static Group[] InitialGroups =>
+    private static DecodingGroup[] InitialGroups =>
     [
         new(2, 0), new(3, 4), new(3, 12), new(4, 20), new(4, 36), new(4, 52), new(4, 68), new(4, 84), new(4, 100),
         new(4, 116), new(4, 132), new(4, 148), new(4, 164), new(5, 180), new(5, 212), new(5, 244),
     ];
 
     // csharpier-ignore
-    private static MatchOverItem[] MatchOverTable =>
+    private static DecodingMatchOverItem[] MatchOverTable =>
     [
         new(1, 8), new(2, 10), new(3, 14), new(4, 22), new(5, 38), new(6, 70), new(7, 134), new(8, 262),
     ];
 
     // csharpier-ignore
-    private static DisplayPrefixItem[] DisplayPrefixTable =>
+    private static DecodingDisplayPrefixItem[] DisplayPrefixTable =>
     [
         new(0, 0), new(0, 1), new(1, 2), new(2, 4), new(3, 8), new(4, 16), new(5, 32), new(6, 64),
     ];
@@ -84,12 +84,12 @@ internal sealed class LightZhlDecoder
         while (true)
         {
             var outcome = ProcessStep(source, destination, ref sourceIndex, ref destinationIndex);
-            if (outcome == StepOutcome.Continue)
+            if (outcome == DecodingStepOutcome.Continue)
             {
                 continue;
             }
 
-            if (outcome == StepOutcome.Finished)
+            if (outcome == DecodingStepOutcome.Finished)
             {
                 break;
             }
@@ -346,7 +346,7 @@ internal sealed class LightZhlDecoder
         return true;
     }
 
-    private static void ShellSort(Span<TempHuffmanStat> source)
+    private static void ShellSort(Span<DecodingTempHuffmanStat> source)
     {
         // Matches the hardcoded gap sequence from the original code
         // h = 40, 13, 4, 1 over a 1-based array in C++; adapt for 0-based here
@@ -372,10 +372,10 @@ internal sealed class LightZhlDecoder
     private void RecalculateSymbolsSorted()
     {
         // Build temp array with (index, statValue)
-        Span<TempHuffmanStat> tmp = stackalloc TempHuffmanStat[SymbolsCount];
+        Span<DecodingTempHuffmanStat> tmp = stackalloc DecodingTempHuffmanStat[SymbolsCount];
         for (var j = 0; j < SymbolsCount; j++)
         {
-            tmp[j] = new TempHuffmanStat((short)j, _stat[j]);
+            tmp[j] = new DecodingTempHuffmanStat((short)j, _stat[j]);
             _stat[j] = (short)(_stat[j] >> 1);
         }
 
@@ -413,7 +413,7 @@ internal sealed class LightZhlDecoder
             }
 
             lastNBits += count;
-            _groupTable[i] = new Group(lastNBits, pos);
+            _groupTable[i] = new DecodingGroup(lastNBits, pos);
             pos += 1 << lastNBits;
         }
 
@@ -426,7 +426,7 @@ internal sealed class LightZhlDecoder
         return ReadNewGroupsLayout(source, ref sourceIndex);
     }
 
-    private StepOutcome ProcessStep(
+    private DecodingStepOutcome ProcessStep(
         ReadOnlySpan<byte> source,
         Span<byte> destination,
         ref int sourceIndex,
@@ -438,44 +438,44 @@ internal sealed class LightZhlDecoder
             || !ValidateSymbolAndUpdateStat(symbol)
         )
         {
-            return StepOutcome.Failed;
+            return DecodingStepOutcome.Failed;
         }
 
         switch (symbol)
         {
             // Literal
             case < 256 when destinationIndex >= destination.Length:
-                return StepOutcome.Failed;
+                return DecodingStepOutcome.Failed;
             case < 256:
             {
                 var b = (byte)symbol;
                 destination[destinationIndex++] = b;
                 ToBuffer(b);
-                return StepOutcome.Continue;
+                return DecodingStepOutcome.Continue;
             }
             // Recalc stats and groups
             case SymbolsCount - 2:
                 return RecalculateAndReadGroups(source, ref sourceIndex)
-                    ? StepOutcome.Continue
-                    : StepOutcome.Failed;
+                    ? DecodingStepOutcome.Continue
+                    : DecodingStepOutcome.Failed;
             // End marker
             case SymbolsCount - 1:
-                return StepOutcome.Finished;
+                return DecodingStepOutcome.Finished;
         }
 
         // Match path
         if (!TryDecodeMatchOver(symbol, source, ref sourceIndex, out var matchOver))
         {
-            return StepOutcome.Failed;
+            return DecodingStepOutcome.Failed;
         }
 
         if (!TryReadDisplacement(source, ref sourceIndex, out var display))
         {
-            return StepOutcome.Failed;
+            return DecodingStepOutcome.Failed;
         }
 
         return TryCopyMatch(destination, ref destinationIndex, display, matchOver)
-            ? StepOutcome.Continue
-            : StepOutcome.Failed;
+            ? DecodingStepOutcome.Continue
+            : DecodingStepOutcome.Failed;
     }
 }

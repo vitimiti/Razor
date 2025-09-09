@@ -4,8 +4,9 @@
 
 namespace Razor.Compression.LightZhl;
 
-internal readonly struct DisplayPrefixItem(int numberOfBits, int display)
+internal enum DecodingStepOutcome
 {
-    public readonly int NumberOfBits = numberOfBits;
-    public readonly int Display = display;
+    Continue,
+    Finished,
+    Failed,
 }
