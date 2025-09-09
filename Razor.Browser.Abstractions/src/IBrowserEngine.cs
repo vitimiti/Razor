@@ -31,13 +31,13 @@ public interface IBrowserEngine
 
     Task NavigateAsync(string browserName, string url);
 
-    Task<IntPtr> GetHWndAsync(string browserName);
+    Task<IntPtr> GetWindowHandleAsync(string browserName);
 
     Task<bool> IsOpenAsync(string browserName);
 
-    Task D3DRenderAsync(int backBufferIndex);
+    Task GraphicsApiRenderAsync(int backBufferIndex);
 
-    Task D3DUpdateAsync();
+    Task GraphicsApiUpdateAsync();
 
     Task<int> GetUpdateRateAsync(string browserName);
 

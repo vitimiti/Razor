@@ -14,15 +14,14 @@ public interface IBrowserInstance
     string[] CommandLineArgs { get; }
     bool IsReleaseBuild { get; }
     string InstallFolder { get; }
-    IntPtr Hwnd { get; }
+    IntPtr WindowHandle { get; }
     int UpdateRate { get; set; }
     string Name { get; }
     string SystemOs { get; }
     int SystemRam { get; }
     string SystemCpuType { get; }
     int SystemCpuSpeed { get; }
-    int SystemXResolution { get; }
-    int SystemYResolution { get; }
+    (int X, int Y) SystemScreenResolution { get; }
     string SystemVideoAdapter { get; }
 
     Task NavigateAsync(string url);
