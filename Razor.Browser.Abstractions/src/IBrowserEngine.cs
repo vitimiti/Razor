@@ -14,7 +14,7 @@ public interface IBrowserEngine
     string MouseFileName { get; set; }
     string MouseBusyFileName { get; set; }
 
-    Task InitializeAsync(IntPtr d3dDevice);
+    Task InitializeAsync(IntPtr graphicsApiDevice);
 
     Task ShutdownAsync();
 

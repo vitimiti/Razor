@@ -18,7 +18,7 @@ public abstract class BrowserEngineBase : IBrowserEngine
     public string MouseFileName { get; set; } = string.Empty;
     public string MouseBusyFileName { get; set; } = string.Empty;
 
-    public abstract Task InitializeAsync(IntPtr d3dDevice);
+    public abstract Task InitializeAsync(IntPtr graphicsApiDevice);
 
     public abstract Task ShutdownAsync();
 
