@@ -6,7 +6,10 @@ namespace Razor.Compression.LightZhl;
 
 internal static class LightZhlEncoder
 {
-    public static int CalcMaxCompressedSize(int rawSz) => rawSz + (rawSz >> 1) + 32;
+    public static int CalculateMaxCompressedSize(int rawSz)
+    {
+        return rawSz + (rawSz >> 1) + 32;
+    }
 
     public static bool Encode(ReadOnlySpan<byte> src, Span<byte> dst, out int written)
     {
