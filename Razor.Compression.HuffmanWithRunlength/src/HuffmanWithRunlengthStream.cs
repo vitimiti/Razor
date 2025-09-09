@@ -13,10 +13,11 @@ namespace Razor.Compression.HuffmanWithRunlength;
 [PublicAPI]
 public sealed class HuffmanWithRunlengthStream : Stream
 {
-    private bool _disposed;
     private readonly Stream _stream;
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
+
+    private bool _disposed;
 
     public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
     public override bool CanSeek => false;
@@ -75,6 +76,8 @@ public sealed class HuffmanWithRunlengthStream : Stream
 
     public override void Flush()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (!CanWrite)
         {
             throw new InvalidOperationException("The stream is not writable.");
@@ -221,9 +224,12 @@ public sealed class HuffmanWithRunlengthStream : Stream
             return;
         }
 
+        // Start writing from the beginning and truncate previous content to avoid trailing bytes.
         _stream.Position = 0;
+        _stream.SetLength(0);
+
         using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-        HuffmanWithRunlengthEncoder.Encode(writer, buffer, offset, buffer.Length);
+        HuffmanWithRunlengthEncoder.Encode(writer, buffer, offset, count);
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)

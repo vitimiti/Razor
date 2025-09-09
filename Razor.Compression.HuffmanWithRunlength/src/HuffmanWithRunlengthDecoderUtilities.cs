@@ -41,10 +41,18 @@ internal static class HuffmanWithRunlengthDecoderUtilities
         stream.Position = 0;
         using BinaryReader reader = new(stream, EncodingExtensions.Ansi, leaveOpen: true);
         var packType = reader.ReadUInt16BigEndian();
+
         var bytesToRead = (packType & 0x8000) != 0 ? 4 : 3;
 
-        // Create an offset
-        _ = reader.ReadBytes(bytesToRead == 4 ? 2 + bytesToRead : 2);
+        // Offset to the size to return:
+        // - Always skip 2-byte type
+        // - If composite header (0x0100), skip the first size field (bytesToRead) to reach the second
+        var offset = 2 + ((packType & 0x0100) != 0 ? bytesToRead : 0);
+
+        // Move to the target size field and read bytesToRead bytes in big-endian
+        stream.Position = 0;
+        _ = reader.ReadBytes(offset);
+
         return bytesToRead == 4 ? reader.ReadUInt32BigEndian() : reader.ReadUInt24BigEndian();
     }
 }
