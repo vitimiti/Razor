@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression.HuffmanWi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression.LightZhl", "Razor.Compression.LightZhl\Razor.Compression.LightZhl.csproj", "{8E0D7A83-9617-4F42-948A-C7EBFF4F7D88}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Compression", "Razor.Compression\Razor.Compression.csproj", "{F461E8F0-63B0-4724-9AC7-64A33C95194F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{8E0D7A83-9617-4F42-948A-C7EBFF4F7D88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E0D7A83-9617-4F42-948A-C7EBFF4F7D88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E0D7A83-9617-4F42-948A-C7EBFF4F7D88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F461E8F0-63B0-4724-9AC7-64A33C95194F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F461E8F0-63B0-4724-9AC7-64A33C95194F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F461E8F0-63B0-4724-9AC7-64A33C95194F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F461E8F0-63B0-4724-9AC7-64A33C95194F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

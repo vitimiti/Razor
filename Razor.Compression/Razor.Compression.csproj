@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Razor.Compression.BinaryTree\Razor.Compression.BinaryTree.csproj" />
+    <ProjectReference Include="..\Razor.Compression.HuffmanWithRunlength\Razor.Compression.HuffmanWithRunlength.csproj" />
+    <ProjectReference Include="..\Razor.Compression.LightZhl\Razor.Compression.LightZhl.csproj" />
+    <ProjectReference Include="..\Razor.Compression.RefPack\Razor.Compression.RefPack.csproj" />
+  </ItemGroup>
+</Project>
