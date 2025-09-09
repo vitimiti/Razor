@@ -6,15 +6,8 @@ using Razor.Extensions;
 
 namespace Razor.Compression.RefPack;
 
-/// <summary>Provides functionality to compress data using the RefPack compression algorithm.</summary>
 internal static class RefPackEncoder
 {
-    /// <summary>Encodes and compresses a specified range of data from the provided buffer into a stream using the RefPack compression algorithm.</summary>
-    /// <param name="writer">The binary writer that will write the encoded and RefPack compressed data.</param>
-    /// <param name="buffer">The input buffer containing the data to be encoded and compressed.</param>
-    /// <param name="offset">The zero-based byte offset in the buffer at which to begin reading data.</param>
-    /// <param name="count">The number of bytes to read from the buffer starting from the specified offset.</param>
-    /// <exception cref="System.ArgumentOutOfRangeException">Thrown if <paramref name="offset"/> or <paramref name="count"/> is negative, or if the sum of <paramref name="offset"/> and <paramref name="count"/> exceeds the length of <paramref name="buffer"/>.</exception>
     public static void Encode(BinaryWriter writer, byte[] buffer, int offset, int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -38,10 +31,6 @@ internal static class RefPackEncoder
         RefCompress(writer, buffer, offset, count);
     }
 
-    /// <summary>Calculates a hash value for the specified position in the source array using a combination of the bytes at the given index and its subsequent positions.</summary>
-    /// <param name="source">The byte array from which the hash value will be calculated.</param>
-    /// <param name="index">The zero-based index in the source array from which to start generating the hash value.</param>
-    /// <returns>An integer representing the calculated hash value derived from the specified position in the source array.</returns>
     private static int HashAt(byte[] source, int index)
     {
         var first = source[index];
@@ -50,12 +39,6 @@ internal static class RefPackEncoder
         return (((first << 8) | third) ^ (second << 4)) & 0xFFFF;
     }
 
-    /// <summary>Determines the maximum match length between two regions of a source buffer, starting at the specified indices and limited by a maximum permitted match length.</summary>
-    /// <param name="source">The source buffer in which the comparison will be performed.</param>
-    /// <param name="sourceIndex">The starting index of the first region within the source buffer.</param>
-    /// <param name="destinationIndex">The starting index of the second region within the source buffer.</param>
-    /// <param name="maxMatch">The maximum number of bytes to compare between the two regions.</param>
-    /// <returns>The length of the match between the two regions in bytes, up to the specified maximum match length.</returns>
     private static int MatchLength(
         byte[] source,
         int sourceIndex,
@@ -75,21 +58,6 @@ internal static class RefPackEncoder
         return current;
     }
 
-    /// <summary>Finds the best match for a sequence in the given source buffer by analyzing possible matches based on the current position, hash values, and a linked list for fast lookups, and calculates the optimal parameters for compression.</summary>
-    /// <param name="source">The source buffer containing the data to search for a match.</param>
-    /// <param name="cPtr">The current position in the source buffer where the search begins.</param>
-    /// <param name="fromStart">The starting position in the source buffer used as a reference for relative offsets.</param>
-    /// <param name="remaining">The number of bytes remaining to be processed in the source buffer starting from <paramref name="cPtr"/>.</param>
-    /// <param name="hashTable">An integer array used as a hash table for quick lookup of potential matches in the source buffer.</param>
-    /// <param name="link">A linked list structure represented as an integer array for resolving hash collisions and chaining entries in the hash table.</param>
-    /// <returns>
-    /// <list type="bullet">
-    /// <listheader>A tuple consisting of:</listheader>
-    /// <item><c>BackOffset</c>: The relative offset of the best match.</item>
-    /// <item><c>BackLength</c>: The length of the best match.</item>
-    /// <item><c>BackCost</c>: The cost in bytes to encode the match.</item>
-    /// </list>
-    /// </returns>
     private static (int BackOffset, int BackLength, int BackCost) FindBestMatch(
         byte[] source,
         int cPtr,
@@ -157,12 +125,6 @@ internal static class RefPackEncoder
         return (bOffset, bLength, bCost);
     }
 
-    /// <summary>Inserts a position into the hash chain structure, updating hash table and link entries used for efficient data compression and matching.</summary>
-    /// <param name="source">The byte array containing the data to be processed and linked into the hash chain.</param>
-    /// <param name="cPtr">The index of the current data position in the source array to be added to the hash chain.</param>
-    /// <param name="fromStart">The starting index in the source array, used to compute the relative position within the hash chain.</param>
-    /// <param name="hashTable">The hash table that maintains an array of hash values, enabling rapid lookups of data positions.</param>
-    /// <param name="link">The array that represents the chain of links, where each position refers to the previous position associated with the same hash value.</param>
     private static void InsertIntoHashChain(
         byte[] source,
         int cPtr,
@@ -177,11 +139,6 @@ internal static class RefPackEncoder
         hashTable[hash] = hashOffset;
     }
 
-    /// <summary>Writes any pending literal blocks from the source buffer to the writer, breaking them into manageable chunks if necessary.</summary>
-    /// <param name="writer">The writer to which the compressed literal blocks will be written.</param>
-    /// <param name="source">The source buffer containing the literal data to be written.</param>
-    /// <param name="rPtr">A reference to the current read position in the source buffer.</param>
-    /// <param name="literalRun">A reference to the count of contiguous literal bytes yet to be written from the source buffer.</param>
     private static void EmitPendingLiteralBlocks(
         BinaryWriter writer,
         byte[] source,
@@ -203,14 +160,6 @@ internal static class RefPackEncoder
         }
     }
 
-    /// <summary>Emits the best match command for a compressed data block into the provided binary writer, encoding the match information and its associated literals.</summary>
-    /// <param name="writer">The binary writer to which the encoded match command and associated literals are written.</param>
-    /// <param name="source">The source buffer containing the data to be compressed.</param>
-    /// <param name="bCost">The cost metric associated with the best match, used to determine the encoding format of the command.</param>
-    /// <param name="bOffset">The offset of the best match from the current position in the source buffer.</param>
-    /// <param name="bLength">The length of the best match found in the source buffer.</param>
-    /// <param name="rPtr">A reference to the current read pointer in the source buffer, which is updated to reflect the processed data.</param>
-    /// <param name="literalRun">A reference to the count of consecutive unmatched literals to be emitted, which is reset to zero once the literals are written.</param>
     private static void EmitBestMatchCommand(
         BinaryWriter writer,
         byte[] source,

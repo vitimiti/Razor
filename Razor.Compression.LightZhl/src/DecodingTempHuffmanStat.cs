@@ -48,7 +48,9 @@ internal readonly struct DecodingTempHuffmanStat(short i, short n)
 
         return obj is DecodingTempHuffmanStat other
             ? CompareTo(other)
-            : throw new ArgumentException($"Object must be of type {nameof(DecodingTempHuffmanStat)}");
+            : throw new ArgumentException(
+                $"Object must be of type {nameof(DecodingTempHuffmanStat)}"
+            );
     }
 
     public static bool operator ==(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
