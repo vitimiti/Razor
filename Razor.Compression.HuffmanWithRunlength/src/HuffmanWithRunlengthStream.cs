@@ -2,32 +2,25 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using JetBrains.Annotations;
 using Razor.Extensions;
 
-namespace Razor.Compression.RefPack;
+namespace Razor.Compression.HuffmanWithRunlength;
 
 [PublicAPI]
-public sealed class RefPackStream : Stream
+public sealed class HuffmanWithRunlengthStream : Stream
 {
     private readonly Stream _stream;
     private readonly CompressionMode _mode;
     private readonly bool _leaveOpen;
-    private readonly MemoryStream? _writeBuffer;
 
     private bool _disposed;
-    private byte[]? _decodedBuffer;
-    private int _decodedLength;
-    private int _decodedReadPosition;
-    private bool _decodedInitialized;
-    private bool _encodedWritten;
 
     public override bool CanRead => _mode is CompressionMode.Decompress && _stream.CanRead;
-
     public override bool CanSeek => false;
-
     public override bool CanWrite => _mode is CompressionMode.Compress && _stream.CanWrite;
 
     public override long Length
@@ -38,7 +31,7 @@ public sealed class RefPackStream : Stream
 
             return _mode is CompressionMode.Compress
                 ? _stream.Length
-                : RefPackDecoderUtilities.GetUncompressedSize(_stream);
+                : HuffmanWithRunlengthDecoderUtilities.GetUncompressedSize(_stream);
         }
     }
 
@@ -48,7 +41,7 @@ public sealed class RefPackStream : Stream
         set => throw new NotSupportedException("Setting stream position is not supported.");
     }
 
-    public RefPackStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    public HuffmanWithRunlengthStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
     {
         if (!stream.CanSeek)
         {
@@ -58,10 +51,6 @@ public sealed class RefPackStream : Stream
         _stream = stream;
         _mode = mode;
         _leaveOpen = leaveOpen;
-        if (_mode is CompressionMode.Compress)
-        {
-            _writeBuffer = new MemoryStream();
-        }
     }
 
     protected override void Dispose(bool disposing)
@@ -69,12 +58,6 @@ public sealed class RefPackStream : Stream
         if (_disposed)
         {
             return;
-        }
-
-        if (disposing && _mode is CompressionMode.Compress)
-        {
-            // Ensure we encode and write once before closing.
-            EnsureCompressedWritten();
         }
 
         if (disposing && !_leaveOpen)
@@ -86,19 +69,20 @@ public sealed class RefPackStream : Stream
         base.Dispose(disposing);
     }
 
-    ~RefPackStream()
+    ~HuffmanWithRunlengthStream()
     {
         Dispose(disposing: false);
     }
 
     public override void Flush()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (!CanWrite)
         {
             throw new InvalidOperationException("The stream is not writable.");
         }
 
-        EnsureCompressedWritten();
         _stream.Flush();
     }
 
@@ -131,39 +115,19 @@ public sealed class RefPackStream : Stream
             throw new InvalidOperationException("The stream is not readable.");
         }
 
-        EnsureDecoded();
-
-        var remaining = _decodedLength - _decodedReadPosition;
-        if (remaining <= 0)
+        if (!HuffmanWithRunlengthDecoderUtilities.IsHuffmanWithRunlengthCompressed(_stream))
         {
-            return 0; // EOF
+            throw new InvalidOperationException("The stream is not a HuffmanWithRunlength stream.");
         }
 
-        var toCopy = Math.Min(count, remaining);
-        Buffer.BlockCopy(_decodedBuffer!, _decodedReadPosition, buffer, offset, toCopy);
-        _decodedReadPosition += toCopy;
-        return toCopy;
+        _stream.Position = 0;
+        using BinaryReader reader = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
+        return (int)HuffmanWithRunlengthDecoder.Decode(reader, buffer, offset, count);
     }
 
     public override int Read(Span<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (!CanRead)
-        {
-            throw new InvalidOperationException("The stream is not readable.");
-        }
-
-        EnsureDecoded();
-        var remaining = _decodedLength - _decodedReadPosition;
-        if (remaining <= 0)
-        {
-            return 0;
-        }
-
-        var toCopy = Math.Min(buffer.Length, remaining);
-        new ReadOnlySpan<byte>(_decodedBuffer!, _decodedReadPosition, toCopy).CopyTo(buffer);
-        _decodedReadPosition += toCopy;
-        return toCopy;
+        return Read(buffer.ToArray(), 0, buffer.Length);
     }
 
     public override Task<int> ReadAsync(
@@ -205,16 +169,27 @@ public sealed class RefPackStream : Stream
             return ValueTask.FromCanceled<int>(cancellationToken);
         }
 
-        return new ValueTask<int>(
-            Task.Run(
-                () =>
+        var task = Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return Read(buffer.Span);
-                },
-                cancellationToken
-            )
+                    var read = Read(rented, 0, buffer.Length);
+                    new ReadOnlySpan<byte>(rented, 0, read).CopyTo(buffer.Span);
+                    return read;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            },
+            cancellationToken
         );
+
+        return new ValueTask<int>(task);
     }
 
     public override int ReadByte()
@@ -249,24 +224,17 @@ public sealed class RefPackStream : Stream
             return;
         }
 
-        // Accumulate uncompressed bytes to encode later on Flush/Dispose.
-        _writeBuffer!.Write(buffer, offset, count);
+        // Start writing from the beginning and truncate previous content to avoid trailing bytes.
+        _stream.Position = 0;
+        _stream.SetLength(0);
+
+        using BinaryWriter writer = new(_stream, EncodingExtensions.Ansi, leaveOpen: true);
+        HuffmanWithRunlengthEncoder.Encode(writer, buffer, offset, count);
     }
 
     public override void Write(ReadOnlySpan<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (!CanWrite)
-        {
-            throw new InvalidOperationException("The stream is not writable.");
-        }
-
-        if (buffer.Length == 0)
-        {
-            return;
-        }
-
-        _writeBuffer!.Write(buffer);
+        Write(buffer.ToArray(), 0, buffer.Length);
     }
 
     public override Task WriteAsync(
@@ -308,16 +276,16 @@ public sealed class RefPackStream : Stream
             return ValueTask.FromCanceled(cancellationToken);
         }
 
-        return new ValueTask(
-            Task.Run(
-                () =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    Write(buffer.Span);
-                },
-                cancellationToken
-            )
+        var task = Task.Run(
+            () =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Write(buffer.Span);
+            },
+            cancellationToken
         );
+
+        return new ValueTask(task);
     }
 
     public override void WriteByte(byte value)
@@ -344,57 +312,5 @@ public sealed class RefPackStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
-    }
-
-    private void EnsureDecoded()
-    {
-        if (_decodedInitialized)
-        {
-            return;
-        }
-
-        if (!RefPackDecoderUtilities.IsRefPackCompressed(_stream))
-        {
-            throw new InvalidOperationException("The stream is not a RefPack stream.");
-        }
-
-        _stream.Position = 0;
-        using var reader = new BinaryReader(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-
-        var expected = RefPackDecoderUtilities.GetUncompressedSize(_stream);
-        _decodedBuffer = new byte[expected];
-        _decodedLength = (int)RefPackDecoder.Decode(reader, _decodedBuffer, 0, (int)expected);
-        _decodedReadPosition = 0;
-        _decodedInitialized = true;
-    }
-
-    private void EnsureCompressedWritten()
-    {
-        if (_encodedWritten || _writeBuffer is null)
-        {
-            return;
-        }
-
-        // Prepare base stream for write
-        _stream.Position = 0;
-        using var writer = new BinaryWriter(_stream, EncodingExtensions.Ansi, leaveOpen: true);
-
-        if (_writeBuffer.TryGetBuffer(out ArraySegment<byte> seg))
-        {
-            RefPackEncoder.Encode(writer, seg.Array!, seg.Offset, seg.Count);
-        }
-        else
-        {
-            var data = _writeBuffer.ToArray();
-            RefPackEncoder.Encode(writer, data, 0, data.Length);
-        }
-
-        // Truncate any old content beyond current position
-        if (_stream.CanSeek && _stream.CanWrite)
-        {
-            _stream.SetLength(_stream.Position);
-        }
-
-        _encodedWritten = true;
     }
 }

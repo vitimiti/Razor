@@ -3,26 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
-using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
-/// <summary>Extensions for the <see cref="BinaryReader" /> class.</summary>
-[PublicAPI]
 public static class BinaryReaderExtensions
 {
-    /// <summary>Reads 2 bytes in big-endian form.</summary>
-    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
-    /// <returns>A new <see cref="ushort" /> with the 2 bytes in big-endian form.</returns>
     public static ushort ReadUInt16BigEndian(this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(2);
         return BinaryPrimitives.ReadUInt16BigEndian(bytes);
     }
 
-    /// <summary>Reads 3 bytes in big-endian form.</summary>
-    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
-    /// <returns>A new <see cref="uint" /> with the 3 bytes in big-endian form.</returns>
     public static uint ReadUInt24BigEndian(this BinaryReader reader)
     {
         var byte1 = reader.ReadByte();
@@ -31,9 +22,6 @@ public static class BinaryReaderExtensions
         return (uint)((byte1 << 16) | (byte2 << 8) | byte3);
     }
 
-    /// <summary>Reads 4 bytes in big-endian form.</summary>
-    /// <param name="reader">The <see cref="BinaryReader" /> to read from.</param>
-    /// <returns>A new <see cref="uint" /> with the 4 bytes in big-endian form.</returns>
     public static uint ReadUInt32BigEndian(this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(4);

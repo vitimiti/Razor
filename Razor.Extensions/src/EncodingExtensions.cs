@@ -3,16 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
-/// <summary>Extensions to the encoding types.</summary>
-[PublicAPI]
 public static class EncodingExtensions
 {
-    /// <summary>Gets the Windows-1252 ASCII encoding.</summary>
-    /// <returns>A new <see cref="Encoding" /> that supports Windows-1252.</returns>
     public static Encoding Ansi => Encoding.GetEncoding(1252);
 
     static EncodingExtensions()
