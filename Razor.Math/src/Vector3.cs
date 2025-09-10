@@ -363,21 +363,18 @@ public class Vector3 : IEqualityComparer<Vector3>
         return (X, Y, Z);
     }
 
-    public float this[int index]
-    {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "The index must be between 0 and 2."
-                ),
-            };
-    }
+    public float this[int index] =>
+        index switch
+        {
+            0 => X,
+            1 => Y,
+            2 => Z,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(index),
+                index,
+                "The index must be between 0 and 2."
+            ),
+        };
 
     public static Vector3 operator +(Vector3 left, Vector3 right)
     {

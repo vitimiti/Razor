@@ -269,20 +269,17 @@ public class Vector2 : IEqualityComparer<Vector2>
         return (X, Y);
     }
 
-    public float this[int index]
-    {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "The index must be between 0 and 1."
-                ),
-            };
-    }
+    public float this[int index] =>
+        index switch
+        {
+            0 => X,
+            1 => Y,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(index),
+                index,
+                "The index must be between 0 and 1."
+            ),
+        };
 
     public static Vector2 operator +(Vector2 left, Vector2 right)
     {
