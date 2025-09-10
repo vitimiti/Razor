@@ -92,7 +92,7 @@ internal sealed class EncodingStat
             {
                 // Decide whether to keep current nBits or use the previous one without mutating the loop counter
                 int chosenBits;
-                if (bitsCount == 0 || Math.Abs(n - averageGroup) > Math.Abs(nn - averageGroup))
+                if (bitsCount == 0 || int.Abs(n - averageGroup) > int.Abs(nn - averageGroup))
                 {
                     n = nn;
                     chosenBits = bitsCount;
