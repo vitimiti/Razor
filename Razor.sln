@@ -20,8 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Browser.Dispatch", "R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Browser.Engine", "Razor.Browser.Engine\Razor.Browser.Engine.csproj", "{6F6CC119-4DC4-4C0C-BC6C-36362C284BB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Utilities", "Razor.Utilities\Razor.Utilities.csproj", "{B29A8FA4-1308-4FED-9500-A71BC03874CD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,9 +66,5 @@ Global
 		{6F6CC119-4DC4-4C0C-BC6C-36362C284BB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F6CC119-4DC4-4C0C-BC6C-36362C284BB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F6CC119-4DC4-4C0C-BC6C-36362C284BB3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B29A8FA4-1308-4FED-9500-A71BC03874CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B29A8FA4-1308-4FED-9500-A71BC03874CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B29A8FA4-1308-4FED-9500-A71BC03874CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B29A8FA4-1308-4FED-9500-A71BC03874CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
