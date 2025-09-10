@@ -91,6 +91,23 @@ public class Vector3 : IEqualityComparer<Vector3>
         return left.X * right.Y - left.Y * right.X;
     }
 
+    public static Vector3 Normalize(Vector3 vector)
+    {
+        var len2 = vector.Length2;
+        if (len2 < float.Epsilon) // Basically 0F
+        {
+            return vector;
+        }
+
+        var oLen = ExtraMath.InvSqrt(len2);
+        return vector * oLen;
+    }
+
+    public static void Swap(ref Vector3 left, ref Vector3 right)
+    {
+        (left, right) = (right, left);
+    }
+
     public static Vector3 Add(Vector3 left, Vector3 right)
     {
         return left + right;
