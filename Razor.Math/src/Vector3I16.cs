@@ -82,18 +82,42 @@ public class Vector3I16 : IEqualityComparer<Vector3I16>
         return (I, J, K);
     }
 
-    public ushort this[int index] =>
-        index switch
+    public ushort this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => I,
+                1 => J,
+                2 => K,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "The index must be between 0 and 2."
+                ),
+            };
+        set
         {
-            0 => I,
-            1 => J,
-            2 => K,
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(index),
-                index,
-                "The index must be between 0 and 2."
-            ),
-        };
+            switch (index)
+            {
+                case 0:
+                    I = value;
+                    break;
+                case 1:
+                    J = value;
+                    break;
+                case 2:
+                    K = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 2."
+                    );
+            }
+        }
+    }
 
     public static Vector3I16 operator +(Vector3I16 left, Vector3I16 right)
     {

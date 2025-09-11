@@ -90,17 +90,38 @@ public class Vector2I : IEqualityComparer<Vector2I>
         return (I, J);
     }
 
-    public int this[int index] =>
-        index switch
+    public int this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => I,
+                1 => J,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "The index must be between 0 and 1."
+                ),
+            };
+        set
         {
-            0 => I,
-            1 => J,
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(index),
-                index,
-                "The index must be between 0 and 1."
-            ),
-        };
+            switch (index)
+            {
+                case 0:
+                    I = value;
+                    break;
+                case 1:
+                    J = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 1."
+                    );
+            }
+        }
+    }
 
     public static Vector2I operator +(Vector2I left, Vector2I right)
     {

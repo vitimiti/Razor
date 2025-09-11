@@ -173,6 +173,30 @@ public class Vector4 : IEqualityComparer<Vector4>
                     "The index must be between 0 and 4."
                 ),
             };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    break;
+                case 1:
+                    Y = value;
+                    break;
+                case 2:
+                    Z = value;
+                    break;
+                case 3:
+                    W = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 4."
+                    );
+            }
+        }
     }
 
     public static Vector4 operator +(Vector4 left, Vector4 right)
