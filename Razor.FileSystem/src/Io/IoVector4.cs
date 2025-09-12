@@ -7,4 +7,4 @@ using JetBrains.Annotations;
 namespace Razor.FileSystem.Io;
 
 [PublicAPI]
-public record IoVector4(float X, float Y, float Z, float W);
+public record struct IoVector4(float X, float Y, float Z, float W);

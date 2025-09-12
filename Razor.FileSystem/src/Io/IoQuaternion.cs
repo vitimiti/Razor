@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace Razor.FileSystem.Io;
 
 [PublicAPI]
-public record IoQuaternion()
+public record struct IoQuaternion()
 {
     public float[] Q { get; init; } = new float[4];
 }
