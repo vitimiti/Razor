@@ -9,24 +9,24 @@ namespace Razor.FileSystem.Chunks;
 [PublicAPI]
 public struct ChunkHeader(uint chunkType, uint chunkSize)
 {
-    internal uint RawChuckSize { get; private set; } = chunkSize;
+    internal uint RawChunkSize { get; set; } = chunkSize;
 
     public uint ChunkType { get; set; } = chunkType;
 
     public uint ChunkSize
     {
-        get => RawChuckSize & 0x7FFFFFFF;
+        get => RawChunkSize & 0x7FFFFFFF;
         set
         {
-            RawChuckSize &= 0x80000000;
-            RawChuckSize |= value & 0x7FFFFFFF;
+            RawChunkSize &= 0x80000000;
+            RawChunkSize |= value & 0x7FFFFFFF;
         }
     }
 
     public bool ContainsSubChunks
     {
-        get => (RawChuckSize & 0x80000000) != 0;
-        set => RawChuckSize = value ? RawChuckSize | 0x80000000 : RawChuckSize & 0x7FFFFFFF;
+        get => (RawChunkSize & 0x80000000) != 0;
+        set => RawChunkSize = value ? RawChunkSize | 0x80000000 : RawChunkSize & 0x7FFFFFFF;
     }
 
     public void AddSize(uint size)

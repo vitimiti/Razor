@@ -183,7 +183,7 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         Write(header.ChunkType);
-        Write(header.RawChuckSize);
+        Write(header.RawChunkSize);
     }
 
     private void WriteMicroHeader(MicroChunkHeader header)
