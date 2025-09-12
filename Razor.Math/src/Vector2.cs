@@ -235,8 +235,8 @@ public class Vector2 : IEqualityComparer<Vector2>
             return false;
         }
 
-        return System.Math.Abs(left.X - right.X) < float.Epsilon
-            && System.Math.Abs(left.Y - right.Y) < float.Epsilon;
+        return float.Abs(left.X - right.X) < float.Epsilon
+            && float.Abs(left.Y - right.Y) < float.Epsilon;
     }
 
     public override int GetHashCode()

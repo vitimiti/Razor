@@ -122,10 +122,10 @@ public class Vector4 : IEqualityComparer<Vector4>
             return false;
         }
 
-        return System.Math.Abs(x.X - y.X) < float.Epsilon
-            && System.Math.Abs(x.Y - y.Y) < float.Epsilon
-            && System.Math.Abs(x.Z - y.Z) < float.Epsilon
-            && System.Math.Abs(x.W - y.W) < float.Epsilon;
+        return float.Abs(x.X - y.X) < float.Epsilon
+            && float.Abs(x.Y - y.Y) < float.Epsilon
+            && float.Abs(x.Z - y.Z) < float.Epsilon
+            && float.Abs(x.W - y.W) < float.Epsilon;
     }
 
     public override int GetHashCode()

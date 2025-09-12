@@ -328,9 +328,9 @@ public class Vector3 : IEqualityComparer<Vector3>
             return false;
         }
 
-        return System.Math.Abs(left.X - right.X) < float.Epsilon
-            && System.Math.Abs(left.Y - right.Y) < float.Epsilon
-            && System.Math.Abs(left.Z - right.Z) < float.Epsilon;
+        return float.Abs(left.X - right.X) < float.Epsilon
+            && float.Abs(left.Y - right.Y) < float.Epsilon
+            && float.Abs(left.Z - right.Z) < float.Epsilon;
     }
 
     public override int GetHashCode()

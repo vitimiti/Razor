@@ -490,9 +490,7 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
             return false;
         }
 
-        return left.Rows[0] == right.Rows[0]
-            && left.Rows[1] == right.Rows[1]
-            && left.Rows[2] == right.Rows[2];
+        return !left.Rows.Where((vec, i) => vec != right.Rows[i]).Any();
     }
 
     public override int GetHashCode()
