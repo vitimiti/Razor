@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Text;
+using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
+[PublicAPI]
 public static class BinaryWriterExtensions
 {
     public static void WriteUInt16BigEndian(this BinaryWriter writer, ushort value)
@@ -27,5 +30,16 @@ public static class BinaryWriterExtensions
         Span<byte> bytes = stackalloc byte[4];
         BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
         writer.Write(bytes);
+    }
+
+    public static void WriteNullTerminatedUtf8(
+        this BinaryWriter writer,
+        string value,
+        Encoding encoding
+    )
+    {
+        var bytes = encoding.GetBytes(value);
+        writer.Write(bytes);
+        writer.Write((byte)0);
     }
 }

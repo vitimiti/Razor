@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
+using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
+[PublicAPI]
 public static class EncodingExtensions
 {
     public static Encoding Ansi => Encoding.GetEncoding(1252);
