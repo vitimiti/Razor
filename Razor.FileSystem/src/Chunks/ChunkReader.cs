@@ -4,6 +4,7 @@
 
 using System.Text;
 using JetBrains.Annotations;
+using Razor.FileSystem.Io;
 
 namespace Razor.FileSystem.Chunks;
 
@@ -185,6 +186,26 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
         return Read<byte>();
     }
 
+    public IoVector2 ReadVector2()
+    {
+        return new IoVector2(ReadFloat(), ReadFloat());
+    }
+
+    public IoVector3 ReadVector3()
+    {
+        return new IoVector3(ReadFloat(), ReadFloat(), ReadFloat());
+    }
+
+    public IoVector4 ReadVector4()
+    {
+        return new IoVector4(ReadFloat(), ReadFloat(), ReadFloat(), ReadFloat());
+    }
+
+    public IoQuaternion ReadQuaternion()
+    {
+        return new IoQuaternion() { Q = [ReadFloat(), ReadFloat(), ReadFloat(), ReadFloat()] };
+    }
+
     private uint ReadUInt32Direct()
     {
         Span<byte> buffer = stackalloc byte[4];
@@ -361,6 +382,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
     private struct ChunkState
     {
         public ChunkHeader Header { get; init; }
+
+        [UsedImplicitly]
         public long StartPosition { get; set; }
         public long BytesRead { get; set; }
     }
