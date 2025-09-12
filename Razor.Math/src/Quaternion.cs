@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace Razor.Math;
 
 [PublicAPI]
-public class Quaternion
+public class Quaternion : IEqualityComparer<Quaternion>
 {
     private static int[] s_next = [1, 2, 0];
 
@@ -16,14 +16,36 @@ public class Quaternion
     public float Z { get; set; }
     public float W { get; set; }
 
+    public bool IsValid =>
+        ExtraMath.IsValid(X)
+        && ExtraMath.IsValid(Y)
+        && ExtraMath.IsValid(Z)
+        && ExtraMath.IsValid(W);
+
+    public float Length2 => float.Pow(X, 2) + float.Pow(Y, 2) + float.Pow(Z, 2) + float.Pow(W, 2);
+
+    public float Length => float.Sqrt(Length2);
+
+    public Quaternion Normalized
+    {
+        get
+        {
+            var mag = Length;
+            if (float.Abs(mag) < float.Epsilon) // Basically 0F
+            {
+                return this;
+            }
+
+            var oMag = 1F / mag;
+            return new Quaternion(X * oMag, Y * oMag, Z * oMag, W * oMag);
+        }
+    }
+
     public Quaternion() { }
 
     public Quaternion(float x, float y, float z, float w)
     {
-        X = x;
-        Y = y;
-        Z = z;
-        W = w;
+        Set(x, y, z, w);
     }
 
     public Quaternion(Vector3 axis, float angle)
@@ -70,7 +92,7 @@ public class Quaternion
             var s = float.Sqrt(matrix[i][i] - matrix[j][j] - matrix[k][k] + 1F);
             result[i] = s * .5F;
             // Essentially s != 0F
-            if (s is < float.Epsilon or > float.Epsilon)
+            if (float.Abs(s) > float.Epsilon)
             {
                 s = .5F / s;
             }
@@ -83,10 +105,180 @@ public class Quaternion
         return result;
     }
 
-    public static Quaternion Slerp(Quaternion p, Quaternion q, float alpha)
+    public static Quaternion Build(Matrix3X3 matrix)
     {
         Quaternion result = new();
 
+        var tr = matrix[0][0] + matrix[1][1] + matrix[2][2];
+        if (tr > 0F)
+        {
+            var s = float.Sqrt(tr + 1F);
+            result[3] = s * .5F;
+            s = .5F / s;
+
+            result[0] = (matrix[2][1] - matrix[1][2]) * s;
+            result[1] = (matrix[0][2] - matrix[2][0]) * s;
+            result[2] = (matrix[1][0] - matrix[0][1]) * s;
+        }
+        else
+        {
+            var i = 0;
+            if (matrix[1][1] > matrix[0][0])
+            {
+                i = 1;
+            }
+
+            if (matrix[2][2] > matrix[i][i])
+            {
+                i = 2;
+            }
+
+            var j = s_next[i];
+            var k = s_next[j];
+
+            var s = float.Sqrt(matrix[i][i] - matrix[j][j] - matrix[k][k] + 1F);
+            result[i] = s * .5F;
+
+            // Essentially s != 0F
+            if (float.Abs(s) > float.Epsilon)
+            {
+                s = .5F / s;
+            }
+
+            result[3] = (matrix[k][j] - matrix[j][k]) * s;
+            result[j] = (matrix[j][i] + matrix[i][j]) * s;
+            result[k] = (matrix[k][i] + matrix[i][k]) * s;
+        }
+
+        return result;
+    }
+
+    public static Quaternion Build(Matrix4X4 matrix)
+    {
+        Quaternion result = new();
+
+        var tr = matrix[0][0] + matrix[1][1] + matrix[2][2];
+        if (tr > 0F)
+        {
+            var s = float.Sqrt(tr + 1F);
+            result[3] = s * .5F;
+            s = .5F / s;
+
+            result[0] = (matrix[2][1] - matrix[1][2]) * s;
+            result[1] = (matrix[0][2] - matrix[2][0]) * s;
+            result[2] = (matrix[1][0] - matrix[0][1]) * s;
+        }
+        else
+        {
+            var i = 0;
+            if (matrix[1][1] > matrix[0][0])
+            {
+                i = 1;
+            }
+
+            if (matrix[2][2] > matrix[i][i])
+            {
+                i = 2;
+            }
+
+            var j = s_next[i];
+            var k = s_next[j];
+
+            var s = float.Sqrt(matrix[i][i] - matrix[j][j] - matrix[k][k] + 1F);
+            result[i] = s * .5F;
+
+            // Essentially s != 0F
+            if (float.Abs(s) > float.Epsilon)
+            {
+                s = .5F / s;
+            }
+
+            result[3] = (matrix[k][j] - matrix[j][k]) * s;
+            result[j] = (matrix[j][i] + matrix[i][j]) * s;
+            result[k] = (matrix[k][i] + matrix[i][k]) * s;
+        }
+
+        return result;
+    }
+
+    public static Matrix3D BuildMatrix3D(Quaternion quaternion)
+    {
+        return new Matrix3D(
+            [
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2]),
+                2F * (quaternion[0] * quaternion[1] - quaternion[2] * quaternion[3]),
+                2F * (quaternion[2] * quaternion[0] + quaternion[1] * quaternion[3]),
+                0F,
+                2F * (quaternion[0] * quaternion[1] + quaternion[2] * quaternion[3]),
+                1F - 2.0f * (quaternion[2] * quaternion[2] + quaternion[0] * quaternion[0]),
+                2F * (quaternion[1] * quaternion[2] - quaternion[0] * quaternion[3]),
+                0F,
+                2F * (quaternion[2] * quaternion[0] - quaternion[1] * quaternion[3]),
+                2F * (quaternion[1] * quaternion[2] + quaternion[0] * quaternion[3]),
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[0] * quaternion[0]),
+                0F,
+            ]
+        );
+    }
+
+    public static Matrix3X3 BuildMatrix3X3(Quaternion quaternion)
+    {
+        return new Matrix3X3(
+            (
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2]),
+                2F * (quaternion[0] * quaternion[1] - quaternion[2] * quaternion[3]),
+                2F * (quaternion[2] * quaternion[0] + quaternion[1] * quaternion[3])
+            ),
+            (
+                2F * (quaternion[0] * quaternion[1] + quaternion[2] * quaternion[3]),
+                1F - 2.0f * (quaternion[2] * quaternion[2] + quaternion[0] * quaternion[0]),
+                2F * (quaternion[1] * quaternion[2] - quaternion[0] * quaternion[3])
+            ),
+            (
+                2F * (quaternion[2] * quaternion[0] - quaternion[1] * quaternion[3]),
+                2F * (quaternion[1] * quaternion[2] + quaternion[0] * quaternion[3]),
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[0] * quaternion[0])
+            )
+        );
+    }
+
+    public static Matrix4X4 BuildMatrix4X4(Quaternion quaternion)
+    {
+        return new Matrix4X4(
+            (
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2]),
+                2F * (quaternion[0] * quaternion[1] - quaternion[2] * quaternion[3]),
+                2F * (quaternion[2] * quaternion[0] + quaternion[1] * quaternion[3]),
+                0F
+            ),
+            (
+                2F * (quaternion[0] * quaternion[1] + quaternion[2] * quaternion[3]),
+                1F - 2.0f * (quaternion[2] * quaternion[2] + quaternion[0] * quaternion[0]),
+                2F * (quaternion[1] * quaternion[2] - quaternion[0] * quaternion[3]),
+                0F
+            ),
+            (
+                2F * (quaternion[2] * quaternion[0] - quaternion[1] * quaternion[3]),
+                2F * (quaternion[1] * quaternion[2] + quaternion[0] * quaternion[3]),
+                1F - 2F * (quaternion[1] * quaternion[1] + quaternion[0] * quaternion[0]),
+                0F
+            ),
+            (0F, 0F, 0F, 1F)
+        );
+    }
+
+    public static Quaternion Inverse(Quaternion quaternion)
+    {
+        return -quaternion;
+    }
+
+    public static Quaternion Conjugate(Quaternion quaternion)
+    {
+        return -quaternion;
+    }
+
+    public static Quaternion Slerp(Quaternion p, Quaternion q, float alpha)
+    {
         var cosTheta =
             float.Pow(p.X, 2) + float.Pow(p.Y, 2) + float.Pow(p.Z, 2) + float.Pow(p.W, 2);
 
@@ -120,12 +312,12 @@ public class Quaternion
             alpha = -alpha;
         }
 
-        result.X = beta * p.X + alpha * q.X;
-        result.Y = beta * p.Y + alpha * q.Y;
-        result.Z = beta * p.Z + alpha * q.Z;
-        result.W = beta * p.W + alpha * q.W;
-
-        return result;
+        return new Quaternion(
+            beta * p.X + alpha * q.X,
+            beta * p.Y + alpha * q.Y,
+            beta * p.Z + alpha * q.Z,
+            beta * p.W + alpha * q.W
+        );
     }
 
     public static Quaternion FastSlerp(Quaternion p, Quaternion q, float alpha)
@@ -148,14 +340,93 @@ public class Quaternion
         {
             beta = 1F - alpha;
         }
-        else { }
+        else
+        {
+            var theta = ExtraMath.FastAcos(cosT);
+            var sinT = ExtraMath.FastSin(theta);
+            var oSinT = 1F / sinT;
+            beta = ExtraMath.FastSin(theta - alpha * theta) * oSinT;
+            alpha = ExtraMath.FastSin(alpha * theta) * oSinT;
+        }
 
-        throw new NotImplementedException();
+        if (qFlip)
+        {
+            alpha = -alpha;
+        }
+
+        return new Quaternion(
+            beta * p.X + alpha * q.X,
+            beta * p.Y + alpha * q.Y,
+            beta * p.Z + alpha * q.Z,
+            beta * p.W + alpha * q.W
+        );
+    }
+
+    public static void SlerpSetup(Quaternion p, Quaternion q, out QuaternionSlerpInfo slerpInfo)
+    {
+        slerpInfo = new QuaternionSlerpInfo(0, 0, false, false);
+        var cosT = float.Pow(p.X, 2) + float.Pow(p.Y, 2) + float.Pow(p.Z, 2) + float.Pow(p.W, 2);
+
+        if (cosT < 0F)
+        {
+            cosT = -cosT;
+            slerpInfo.Flip = true;
+        }
+        else
+        {
+            slerpInfo.Flip = false;
+        }
+
+        if (float.Abs(1F - cosT) < float.Epsilon)
+        {
+            slerpInfo.Linear = true;
+            slerpInfo.Theta = 0F;
+            slerpInfo.SinT = 0F;
+        }
+        else
+        {
+            slerpInfo.Linear = false;
+            slerpInfo.Theta = float.Acos(cosT);
+            slerpInfo.SinT = float.Sin(slerpInfo.Theta);
+        }
+    }
+
+    public static Quaternion CachedSlerp(
+        Quaternion p,
+        Quaternion q,
+        float alpha,
+        QuaternionSlerpInfo slerpInfo
+    )
+    {
+        float beta;
+        float oSinT;
+        if (slerpInfo.Linear)
+        {
+            beta = 1F - alpha;
+        }
+        else
+        {
+            oSinT = 1F / slerpInfo.Theta;
+            beta = float.Sin(slerpInfo.Theta - alpha * slerpInfo.Theta) * oSinT;
+            alpha = float.Sin(alpha * slerpInfo.Theta) * oSinT;
+        }
+
+        if (slerpInfo.Flip)
+        {
+            alpha = -alpha;
+        }
+
+        return new Quaternion(
+            beta * p.X + alpha * q.X,
+            beta * p.Y + alpha * q.Y,
+            beta * p.Z + alpha * q.Z,
+            beta * p.W + alpha * q.W
+        );
     }
 
     public static Quaternion Trackball(float x0, float y0, float x1, float y1, float sphSize)
     {
-        if (System.Math.Abs(x0 - x1) < float.Epsilon && System.Math.Abs(y0 - y1) < float.Epsilon)
+        if (float.Abs(x0 - x1) < float.Epsilon && float.Abs(y0 - y1) < float.Epsilon)
         {
             return new Quaternion(0F, 0F, 0F, 1F);
         }
@@ -191,17 +462,24 @@ public class Quaternion
         quaternion[1] = tmp[1];
         quaternion[2] = tmp[2];
 
-        throw new NotImplementedException();
-        // quaternion.Scale(float.Sin(phi / 2F));
+        quaternion.Scale(float.Sin(phi / 2F));
         quaternion[3] = float.Cos(phi / 2F);
 
         return quaternion;
     }
 
+    public void Set(float a = 0F, float b = 0F, float c = 0F, float d = 0F)
+    {
+        X = a;
+        Y = b;
+        Z = c;
+        W = d;
+    }
+
     public void Normalize()
     {
         var len2 = float.Pow(X, 2) + float.Pow(Y, 2) + float.Pow(Z, 2) + float.Pow(W, 2);
-        if (len2 < float.Epsilon) // Basically 0F
+        if (float.Abs(len2) < float.Epsilon) // Basically 0F
         {
             return;
         }
@@ -211,6 +489,11 @@ public class Quaternion
         Y *= invMag;
         Z *= invMag;
         W *= invMag;
+    }
+
+    public void MakeIdentity()
+    {
+        Set();
     }
 
     public Quaternion MakeClosest(Quaternion quaternion)
@@ -234,6 +517,65 @@ public class Quaternion
         return this;
     }
 
+    public void Scale(float scale)
+    {
+        X *= scale;
+        Y *= scale;
+        Z *= scale;
+        W *= scale;
+    }
+
+    public Vector3 RotateVector(Vector3 vector)
+    {
+        var x = W * vector.X + (Y * vector.Z - vector.Y * Z);
+        var y = W * vector.Y - (X * vector.Z - vector.X * Z);
+        var z = W * vector.Z + (X * vector.Y - vector.X * Y);
+        var w = -(X * vector.X + Y * vector.Y + Z * vector.Z);
+
+        return new Vector3(
+            w * (-X) + W * x + (y * (-Z) - (-Y) * z),
+            w * (-Y) + W * y - (x * (-Z) - (-X) * z),
+            w * (-Z) + W * z + (x * (-Y) - (-X) * y)
+        );
+    }
+
+    public void RotateX(float theta)
+    {
+        var temp = new Quaternion(new Vector3(1, 0, 0), theta);
+        X = temp.X;
+        Y = temp.Y;
+        Z = temp.Z;
+        W = temp.W;
+    }
+
+    public void RotateY(float theta)
+    {
+        var temp = new Quaternion(new Vector3(0, 1, 0), theta);
+        X = temp.X;
+        Y = temp.Y;
+        Z = temp.Z;
+        W = temp.W;
+    }
+
+    public void RotateZ(float theta)
+    {
+        var temp = new Quaternion(new Vector3(0, 0, 1), theta);
+        X = temp.X;
+        Y = temp.Y;
+        Z = temp.Z;
+        W = temp.W;
+    }
+
+    public void Randomize()
+    {
+        X = (ExtraMath.SystemRand() & 0xFFFF) / 65536F;
+        Y = (ExtraMath.SystemRand() & 0xFFFF) / 65536F;
+        Z = (ExtraMath.SystemRand() & 0xFFFF) / 65536F;
+        W = (ExtraMath.SystemRand() & 0xFFFF) / 65536F;
+
+        Normalize();
+    }
+
     private static float ProjectToSphere(float r, float x, float y)
     {
         var d = float.Sqrt(float.Pow(x, 2) + float.Pow(y, 2));
@@ -250,6 +592,69 @@ public class Quaternion
         }
 
         return z;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Quaternion other && Equals(this, other);
+    }
+
+    public bool Equals(Quaternion? left, Quaternion? right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left is null)
+        {
+            return false;
+        }
+
+        if (right is null)
+        {
+            return false;
+        }
+
+        if (left.GetType() != right.GetType())
+        {
+            return false;
+        }
+
+        return float.Abs(left.X - right.X) < float.Epsilon
+            && float.Abs(left.Y - right.Y) < float.Epsilon
+            && float.Abs(left.Z - right.Z) < float.Epsilon
+            && float.Abs(left.W - right.W) < float.Epsilon;
+    }
+
+    public override int GetHashCode()
+    {
+        return GetHashCode(this);
+    }
+
+    public int GetHashCode(Quaternion obj)
+    {
+        return HashCode.Combine(obj.X, obj.Y, obj.Z, obj.W);
+    }
+
+    public override string ToString()
+    {
+        return $"({X}, {Y}, {Z}, {W})";
+    }
+
+    public string ToString(string? format)
+    {
+        return $"({X.ToString(format)}, {Y.ToString(format)}, {Z.ToString(format)}, {W.ToString(format)})";
+    }
+
+    public string ToString(IFormatProvider? formatProvider)
+    {
+        return $"({X.ToString(formatProvider)}, {Y.ToString(formatProvider)}, {Z.ToString(formatProvider)}, {W.ToString(formatProvider)})";
+    }
+
+    public (float X, float Y, float Z, float W) Deconstruct()
+    {
+        return (X, Y, Z, W);
     }
 
     public float this[int index]
@@ -291,5 +696,75 @@ public class Quaternion
                     );
             }
         }
+    }
+
+    public static Quaternion operator +(Quaternion left, Quaternion right)
+    {
+        return new Quaternion(
+            left.X + right.X,
+            left.Y + right.Y,
+            left.Z + right.Z,
+            left.W + right.W
+        );
+    }
+
+    public static Quaternion operator -(Quaternion left, Quaternion right)
+    {
+        return new Quaternion(
+            left.X - right.X,
+            left.Y - right.Y,
+            left.Z - right.Z,
+            left.W - right.W
+        );
+    }
+
+    public static Quaternion operator *(Quaternion left, Quaternion right)
+    {
+        return new Quaternion(
+            left.W * right.X + right.W * left.X + (left.Y * right.Z - right.Y * left.Z),
+            left.W * right.Y + right.W * left.Y - (left.X * right.Z - right.X * left.Z),
+            left.W * right.Z + right.W * left.Z + (left.X * right.Y - right.X * left.Y),
+            left.W * right.W - (left.X * right.X + left.Y * right.Y + left.Z * right.Z)
+        );
+    }
+
+    public static Quaternion operator *(Quaternion quaternion, float scalar)
+    {
+        return new Quaternion(
+            quaternion[0] * scalar,
+            quaternion[1] * scalar,
+            quaternion[2] * scalar,
+            quaternion[3] * scalar
+        );
+    }
+
+    public static Quaternion operator *(float scalar, Quaternion quaternion)
+    {
+        return quaternion * scalar;
+    }
+
+    public static Quaternion operator /(Quaternion left, Quaternion right)
+    {
+        return left * Inverse(right);
+    }
+
+    public static Quaternion operator -(Quaternion quaternion)
+    {
+        return new Quaternion(-quaternion.X, -quaternion.Y, -quaternion.Z, -quaternion.W);
+    }
+
+    public static Quaternion operator +(Quaternion value)
+    {
+        return value;
+    }
+
+    public static bool operator ==(Quaternion left, Quaternion right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Quaternion left, Quaternion right)
+    {
+        return !left.Equals(right);
     }
 }
