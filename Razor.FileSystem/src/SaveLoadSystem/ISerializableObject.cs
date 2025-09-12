@@ -4,7 +4,12 @@
 
 using JetBrains.Annotations;
 
-namespace Razor.FileSystem.Io;
+namespace Razor.FileSystem.SaveLoadSystem;
 
 [PublicAPI]
-public record struct IoVector3(float X, float Y, float Z);
+public interface ISerializableObject
+{
+    void Write(BinaryWriter writer, SaveContext context);
+    void Read(BinaryReader reader, LoadContext context);
+    void OnPostLoad(LoadContext context);
+}
