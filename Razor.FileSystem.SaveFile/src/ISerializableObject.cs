@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Razor.FileSystem.SaveLoadSystem;
+namespace Razor.FileSystem.SaveFile;
 
 [PublicAPI]
 public interface ISerializableObject
