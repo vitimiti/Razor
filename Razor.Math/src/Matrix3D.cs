@@ -2,7 +2,9 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
+using Razor.Generics;
 using MatrixRow = (float Member1, float Member2, float Member3, float Member4);
 
 namespace Razor.Math;
@@ -11,6 +13,46 @@ namespace Razor.Math;
 public class Matrix3D : IEqualityComparer<Matrix3D>
 {
     protected Vector4[] Rows { get; }
+
+    public static Matrix3D Identity => new((1F, 0F, 0F, 0F), (0F, 1F, 0F, 0F), (0F, 0F, 1F, 0F));
+
+    public static Matrix3D RotateX90 => new((1F, 0F, 0F, 0F), (0F, 0F, -1F, 0F), (0F, 1F, 0F, 0F));
+
+    public static Matrix3D RotateX180 =>
+        new((1F, 0F, 0F, 0F), (0F, -1F, 0F, 0F), (0F, 0F, -1F, 0F));
+
+    public static Matrix3D RotateX270 => new((1F, 0F, 0F, 0F), (0F, 0F, 1F, 0F), (0F, -1F, 0F, 0F));
+
+    public static Matrix3D RotateY90 => new((0F, 0F, 1F, 0F), (0F, 1F, 0F, 0F), (-1F, 0F, 0F, 0F));
+
+    public static Matrix3D RotateY180 =>
+        new((-1F, 0F, 0F, 0F), (0F, 1F, 0F, 0F), (0F, 0F, -1F, 0F));
+
+    public static Matrix3D RotateY270 => new((0F, 0F, -1F, 0F), (0F, 1F, 0F, 0F), (1F, 0F, 0F, 0F));
+
+    public static Matrix3D RotateZ90 => new((0F, -1F, 0F, 0F), (1F, 0F, 0F, 0F), (0F, 0F, 1F, 0F));
+
+    public static Matrix3D RotateZ180 =>
+        new((-1F, 0F, 0F, 0F), (0F, -1F, 0F, 0F), (0F, 0F, 1F, 0F));
+
+    public static Matrix3D RotateZ270 => new((0F, 1F, 0F, 0F), (-1F, 0F, 0F, 0F), (0F, 0F, 1F, 0F));
+
+    public bool IsOrthogonal
+    {
+        get
+        {
+            var x = XVector;
+            var y = YVector;
+            var z = ZVector;
+
+            return Vector3.DotProduct(x, y) <= float.Epsilon
+                && Vector3.DotProduct(y, z) <= float.Epsilon
+                && Vector3.DotProduct(z, x) <= float.Epsilon
+                && float.Abs(x.Length2 - 1F) <= float.Epsilon
+                && float.Abs(y.Length2 - 1F) <= float.Epsilon
+                && float.Abs(z.Length2 - 1F) <= float.Epsilon;
+        }
+    }
 
     public Vector3 Translation
     {
@@ -44,6 +86,42 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
     public Vector3 XVector => new(Rows[0][0], Rows[1][0], Rows[2][0]);
     public Vector3 YVector => new(Rows[0][1], Rows[1][1], Rows[2][1]);
     public Vector3 ZVector => new(Rows[0][2], Rows[1][2], Rows[2][2]);
+
+    public float XRotation => float.Atan2(Rows[2][1], Rows[1][1]);
+
+    public float YRotation => float.Atan2(Rows[0][2], Rows[2][2]);
+
+    public float ZRotation => float.Atan2(Rows[1][0], Rows[0][0]);
+
+    public Matrix3D OrthogonalInverse
+    {
+        get
+        {
+            Matrix3D result = new();
+
+            result.Rows[0][0] = Rows[0][0];
+            result.Rows[0][1] = Rows[1][0];
+            result.Rows[0][2] = Rows[2][0];
+
+            result.Rows[1][0] = Rows[0][1];
+            result.Rows[1][1] = Rows[1][1];
+            result.Rows[1][2] = Rows[2][1];
+
+            result.Rows[2][0] = Rows[0][2];
+            result.Rows[2][1] = Rows[1][2];
+            result.Rows[2][2] = Rows[2][2];
+
+            var translation = Translation;
+            translation = result.RotateVector3(translation);
+            translation = -translation;
+
+            result.Rows[0][3] = translation[0];
+            result.Rows[1][3] = translation[1];
+            result.Rows[2][3] = translation[2];
+
+            return result;
+        }
+    }
 
     public Matrix3D()
     {
@@ -105,6 +183,11 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         Rows = other.Rows;
     }
 
+    public static Matrix3D Multiply(Matrix3D left, Matrix3D right)
+    {
+        return left * right;
+    }
+
     public static Vector3 TransformVector3(Matrix3D matrix, Vector3 vector)
     {
         return new Vector3(
@@ -131,25 +214,87 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
             vector.Z - matrix[2][3]
         );
 
-        return InverseRotateVector(matrix, diff);
+        return InverseRotateVector3(matrix, diff);
     }
 
     public static Vector3 RotateVector3(Matrix3D matrix, Vector3 vector)
     {
-        return new Vector3(
-            matrix[0][0] * vector.X + matrix[0][1] * vector.Y + matrix[0][2] * vector.Z,
-            matrix[1][0] * vector.X + matrix[1][1] * vector.Y + matrix[1][2] * vector.Z,
-            matrix[2][0] * vector.X + matrix[2][1] * vector.Y + matrix[2][2] * vector.Z
-        );
+        return matrix.RotateVector3(vector);
     }
 
-    public static Vector3 InverseRotateVector(Matrix3D matrix, Vector3 vector)
+    public static Vector3 InverseRotateVector3(Matrix3D matrix, Vector3 vector)
     {
-        return new Vector3(
-            matrix[0][0] * vector.X + matrix[1][0] * vector.Y + matrix[2][0] * vector.Z,
-            matrix[0][1] * vector.X + matrix[1][1] * vector.Y + matrix[2][1] * vector.Z,
-            matrix[0][2] * vector.X + matrix[1][2] * vector.Y + matrix[2][2] * vector.Z
-        );
+        return matrix.InverseRotateVector3(vector);
+    }
+
+    public static Matrix3D GetInverse(INativeMatrixInverse nativeMatrixInverse)
+    {
+        Matrix3D result = new();
+
+        result.Rows[0][0] = nativeMatrixInverse[0, 0];
+        result.Rows[0][1] = nativeMatrixInverse[0, 1];
+        result.Rows[0][2] = nativeMatrixInverse[0, 2];
+        result.Rows[0][3] = nativeMatrixInverse[0, 3];
+
+        result.Rows[1][0] = nativeMatrixInverse[1, 0];
+        result.Rows[1][1] = nativeMatrixInverse[1, 1];
+        result.Rows[1][2] = nativeMatrixInverse[1, 2];
+        result.Rows[1][3] = nativeMatrixInverse[1, 3];
+
+        result.Rows[2][0] = nativeMatrixInverse[2, 0];
+        result.Rows[2][1] = nativeMatrixInverse[2, 1];
+        result.Rows[2][2] = nativeMatrixInverse[2, 2];
+        result.Rows[2][3] = nativeMatrixInverse[2, 3];
+
+        return result;
+    }
+
+    public static Matrix3D Lerp(Matrix3D left, Matrix3D right, float factor)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(factor, 0F);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(factor, 1F);
+
+        Matrix3D result = new();
+        var position = Vector3.Lerp(left.Translation, right.Translation, factor);
+        var rotation = Quaternion.Slerp(Quaternion.Build(left), Quaternion.Build(right), factor);
+        result.Set(rotation, position);
+        return result;
+    }
+
+    public static bool SolveLinearSystem(ref Matrix3D system)
+    {
+        // Essentially system[0][0] == 0F
+        if (system[0][0] < float.Epsilon)
+        {
+            return false;
+        }
+
+        system[0] *= 1F / system[0][0];
+        system[1] -= system[1][0] * system[0];
+        system[2] -= system[2][0] * system[0];
+
+        // Essentially system[1][1] == 0F
+        if (system[1][1] < float.Epsilon)
+        {
+            return false;
+        }
+
+        system[1] *= 1F / system[1][1];
+        system[2] -= system[2][1] * system[1];
+
+        // Essentially system[2][2] == 0F
+        if (system[2][2] < float.Epsilon)
+        {
+            return false;
+        }
+
+        system[2] *= 1F / system[2][2];
+
+        system[1] -= system[1][2] * system[2];
+        system[0] -= system[0][2] * system[2];
+
+        system[0] -= system[0][1] * system[1];
+        return true;
     }
 
     public void Set(float[] values)
@@ -214,6 +359,49 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         Rows[0].Set(1F, 0F, 0F, position[0]);
         Rows[1].Set(0F, 1F, 0F, position[1]);
         Rows[2].Set(0F, 0F, 1F, position[2]);
+    }
+
+    public void Set(Matrix3X3 rotation, Vector3 position)
+    {
+        Rows[0].Set(rotation[0][0], rotation[0][1], rotation[0][2], position[0]);
+        Rows[1].Set(rotation[1][0], rotation[1][1], rotation[1][2], position[1]);
+        Rows[2].Set(rotation[2][0], rotation[2][1], rotation[2][2], position[2]);
+    }
+
+    public void Set(Quaternion rotation, Vector3 position)
+    {
+        SetRotation(rotation);
+        Translation = position;
+    }
+
+    public void SetRotation(Matrix3X3 rotation)
+    {
+        Rows[0][0] = rotation[0][0];
+        Rows[0][1] = rotation[0][1];
+        Rows[0][2] = rotation[0][2];
+
+        Rows[1][0] = rotation[1][0];
+        Rows[1][1] = rotation[1][1];
+        Rows[1][2] = rotation[1][2];
+
+        Rows[2][0] = rotation[2][0];
+        Rows[2][1] = rotation[2][1];
+        Rows[2][2] = rotation[2][2];
+    }
+
+    public void SetRotation(Quaternion rotation)
+    {
+        Rows[0][0] = 1F - 2F * (rotation[1] * rotation[1] + rotation[2] * rotation[2]);
+        Rows[0][1] = 2F * (rotation[0] * rotation[1] - rotation[2] * rotation[3]);
+        Rows[0][2] = 2F * (rotation[2] * rotation[0] + rotation[1] * rotation[3]);
+
+        Rows[1][0] = 2F * (rotation[0] * rotation[1] + rotation[2] * rotation[3]);
+        Rows[1][1] = 1F - 2F * (rotation[2] * rotation[2] + rotation[0] * rotation[0]);
+        Rows[1][2] = 2F * (rotation[1] * rotation[2] - rotation[0] * rotation[3]);
+
+        Rows[2][0] = 2F * (rotation[2] * rotation[0] - rotation[1] * rotation[3]);
+        Rows[2][1] = 2F * (rotation[1] * rotation[2] + rotation[0] * rotation[3]);
+        Rows[2][2] = 1F - 2F * (rotation[1] * rotation[1] + rotation[0] * rotation[0]);
     }
 
     public void Translate(float x, float y, float z)
@@ -387,6 +575,126 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
     public void Scale(Vector3 scale)
     {
         Scale(scale.X, scale.Y, scale.Z);
+    }
+
+    public Vector3 RotateVector3(Vector3 vector)
+    {
+        return new Vector3(
+            Rows[0][0] * vector.X + Rows[0][1] * vector.Y + Rows[0][2] * vector.Z,
+            Rows[1][0] * vector.X + Rows[1][1] * vector.Y + Rows[1][2] * vector.Z,
+            Rows[2][0] * vector.X + Rows[2][1] * vector.Y + Rows[2][2] * vector.Z
+        );
+    }
+
+    public Vector3 InverseRotateVector3(Vector3 vector)
+    {
+        return new Vector3(
+            Rows[0][0] * vector.X + Rows[1][0] * vector.Y + Rows[2][0] * vector.Z,
+            Rows[0][1] * vector.X + Rows[1][1] * vector.Y + Rows[2][1] * vector.Z,
+            Rows[0][2] * vector.X + Rows[1][2] * vector.Y + Rows[2][2] * vector.Z
+        );
+    }
+
+    public void LookAt(Vector3 position, Vector3 target, float roll)
+    {
+        var dx = target[0] - position[0];
+        var dy = target[1] - position[1];
+        var dz = target[2] - position[2];
+
+        var len1 = float.Sqrt(float.Pow(dx, 2) + float.Pow(dy, 2) + float.Pow(dz, 2));
+        var len2 = float.Sqrt(float.Pow(dx, 2) + float.Pow(dy, 2));
+
+        float sinPosition;
+        float cosPosition;
+        // Essentially len1 != 0F
+        if (len1 is < float.Epsilon or > float.Epsilon)
+        {
+            sinPosition = dz / len1;
+            cosPosition = len2 / len1;
+        }
+        else
+        {
+            sinPosition = 0F;
+            cosPosition = 1F;
+        }
+
+        float sinYaw;
+        float cosYaw;
+        // Essentially len2 != 0F
+        if (len2 is < float.Epsilon or > float.Epsilon)
+        {
+            sinYaw = dy / len2;
+            cosYaw = dx / len2;
+        }
+        else
+        {
+            sinYaw = 0F;
+            cosYaw = 1F;
+        }
+
+        Rows[0].X = 0F;
+        Rows[0].Y = 0F;
+        Rows[0].Z = -1F;
+
+        Rows[1].X = -1F;
+        Rows[1].Y = 0F;
+        Rows[1].Z = 0F;
+
+        Rows[2].X = 0F;
+        Rows[2].Y = 1F;
+        Rows[2].Z = 0F;
+
+        Rows[0].W = position.X;
+        Rows[1].W = position.Y;
+        Rows[2].W = position.Z;
+
+        RotateY(sinYaw, cosYaw);
+        RotateX(sinPosition, cosPosition);
+        RotateZ(-roll);
+    }
+
+    public void ObjectLookAt(Vector3 position, Vector3 target, float roll)
+    {
+        var dx = target[0] - position[0];
+        var dy = target[1] - position[1];
+        var dz = target[2] - position[2];
+
+        var len1 = float.Sqrt(float.Pow(dx, 2) + float.Pow(dy, 2) + float.Pow(dz, 2));
+        var len2 = float.Sqrt(float.Pow(dx, 2) + float.Pow(dy, 2));
+
+        float sinPosition;
+        float cosPosition;
+        // Essentially len1 != 0F
+        if (len1 is < float.Epsilon or > float.Epsilon)
+        {
+            sinPosition = dz / len1;
+            cosPosition = len2 / len1;
+        }
+        else
+        {
+            sinPosition = 0F;
+            cosPosition = 1F;
+        }
+
+        float sinYaw;
+        float cosYaw;
+        // Essentially len2 != 0F
+        if (len2 is < float.Epsilon or > float.Epsilon)
+        {
+            sinYaw = dy / len2;
+            cosYaw = dx / len2;
+        }
+        else
+        {
+            sinYaw = 0F;
+            cosYaw = 1F;
+        }
+
+        MakeIdentity();
+        Translate(position);
+        RotateZ(sinYaw, cosYaw);
+        RotateY(-sinPosition, cosPosition);
+        RotateX(roll);
     }
 
     public void PreRotateX(float theta)
@@ -642,6 +950,148 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         return result.ToArray();
     }
 
+    public void BuildTransformMatrix(Vector3 position, Vector3 direction)
+    {
+        var len2 = float.Sqrt(float.Pow(direction.X, 2) + float.Pow(direction.Y, 2));
+        var sinPosition = direction.Z;
+        var cosPosition = len2;
+
+        float sinYaw;
+        float cosYaw;
+        // Essentially len2 != 0F
+        if (len2 is < float.Epsilon or > float.Epsilon)
+        {
+            sinYaw = direction.Y / len2;
+            cosYaw = direction.X / len2;
+        }
+        else
+        {
+            sinYaw = 0F;
+            cosYaw = 1F;
+        }
+
+        MakeIdentity();
+        Translate(position);
+        RotateZ(sinYaw, cosYaw);
+        RotateY(-sinPosition, cosPosition);
+    }
+
+    public void Copy3X3Matrix(Matrix3X3 matrix)
+    {
+        Rows[0][0] = matrix[0][0];
+        Rows[0][1] = matrix[0][1];
+        Rows[0][2] = matrix[0][2];
+        Rows[0][3] = 0F;
+
+        Rows[1][0] = matrix[1][0];
+        Rows[1][1] = matrix[1][1];
+        Rows[1][2] = matrix[1][2];
+        Rows[1][3] = 0F;
+
+        Rows[2][0] = matrix[2][0];
+        Rows[2][1] = matrix[2][1];
+        Rows[2][2] = matrix[2][2];
+        Rows[2][3] = 0F;
+    }
+
+    public (Vector3 Min, Vector3 Max) TransformAxisAlignedBox(Vector3 min, Vector3 max)
+    {
+        Vector3 resultMin = new();
+        Vector3 resultMax = new();
+
+        resultMin.X = resultMax.X = Rows[0][3];
+        resultMin.Y = resultMax.Y = Rows[1][3];
+        resultMin.Z = resultMax.Z = Rows[2][3];
+
+        for (var i = 0; i < Rows.Length; i++)
+        {
+            for (var j = 0; j < Rows[i].Length; j++)
+            {
+                var tmp0 = Rows[i][j] * min[j];
+                var tmp1 = Rows[i][j] * max[j];
+                if (tmp0 < tmp1)
+                {
+                    resultMin[i] += tmp0;
+                    resultMax[i] += tmp1;
+                }
+                else
+                {
+                    resultMin[i] += tmp1;
+                    resultMax[i] += tmp0;
+                }
+            }
+        }
+
+        return (resultMin, resultMax);
+    }
+
+    public (Vector3 Center, Vector3 Extent) TransformCenterExtentAxisAlignedBox(
+        Vector3 center,
+        Vector3 extent
+    )
+    {
+        Vector3 resultCenter = new();
+        Vector3 resultExtent = new();
+        for (var i = 0; i < Rows.Length; i++)
+        {
+            resultCenter[i] = Rows[i][3];
+            resultExtent[i] = 0F;
+            for (var j = 0; j < Rows[i].Length; j++)
+            {
+                resultCenter[i] += Rows[i][j] * center[j];
+                resultExtent[i] += float.Abs(Rows[i][j] * extent[j]);
+            }
+        }
+
+        return (resultCenter, resultExtent);
+    }
+
+    public void ReOrthogonalize()
+    {
+        var x = XVector;
+        var y = YVector;
+
+        var z = Vector3.CrossProduct(x, y);
+        y = Vector3.CrossProduct(z, x);
+
+        var len = x.Length;
+        if (len < float.Epsilon)
+        {
+            MakeIdentity();
+            return;
+        }
+
+        x *= 1F / len;
+        len = y.Length;
+        if (len < float.Epsilon)
+        {
+            MakeIdentity();
+            return;
+        }
+
+        y *= 1F / len;
+        len = z.Length;
+        if (len < float.Epsilon)
+        {
+            MakeIdentity();
+            return;
+        }
+
+        z *= 1F / len;
+
+        Rows[0][0] = x.X;
+        Rows[0][1] = x.Y;
+        Rows[0][2] = x.Z;
+
+        Rows[1][0] = y.X;
+        Rows[1][1] = y.Y;
+        Rows[1][2] = y.Z;
+
+        Rows[2][0] = z.X;
+        Rows[2][1] = z.Y;
+        Rows[2][2] = z.Z;
+    }
+
     public override bool Equals(object? obj)
     {
         return obj is Matrix3D other && Equals(this, other);
@@ -797,6 +1247,11 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         );
     }
 
+    [SuppressMessage(
+        "csharpsquid",
+        "S3875:operator==\" should not be overloaded on reference types",
+        Justification = "This is a mathematical class that can be equated, but cannot have addition or substraction."
+    )]
     public static bool operator ==(Matrix3D left, Matrix3D right)
     {
         return left.Equals(right);
