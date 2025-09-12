@@ -7,11 +7,11 @@ using JetBrains.Annotations;
 namespace Razor.FileSystem.Chunks;
 
 [PublicAPI]
-public struct ChunkHeader(uint chunkTypeFlags, uint chunkSize)
+public struct ChunkHeader(uint chunkType, uint chunkSize)
 {
     internal uint RawChuckSize { get; private set; } = chunkSize;
 
-    public uint ChunkTypeFlags { get; set; } = chunkTypeFlags;
+    public uint ChunkType { get; set; } = chunkType;
 
     public uint ChunkSize
     {

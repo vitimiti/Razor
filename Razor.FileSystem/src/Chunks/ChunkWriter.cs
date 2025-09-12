@@ -77,18 +77,6 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         }
     }
 
-    public void Write<T>(T value)
-        where T : unmanaged
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        unsafe
-        {
-            var span = new ReadOnlySpan<byte>(&value, sizeof(T));
-            Write(span);
-        }
-    }
-
     public void Write(ReadOnlySpan<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -102,7 +90,19 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         UpdateChunkSizes(buffer.Length);
     }
 
-    public void Write(string text, Encoding? encoding = null)
+    public void Write<T>(T value)
+        where T : unmanaged
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        unsafe
+        {
+            var span = new ReadOnlySpan<byte>(&value, sizeof(T));
+            Write(span);
+        }
+    }
+
+    public void WriteString(string text, Encoding? encoding = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -112,77 +112,77 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         Write(stackalloc byte[1]); // null terminator
     }
 
-    public void Write(byte[] data)
+    public void WriteBytes(byte[] data)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         Write(new Span<byte>(data));
     }
 
-    public void Write(int value)
+    public void WriteByte(byte value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<int>(value);
+        Write(value);
     }
 
-    public void Write(uint value)
+    public void WriteInt32(int value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<uint>(value);
+        Write(value);
     }
 
-    public void Write(float value)
+    public void WriteUInt32(uint value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<float>(value);
+        Write(value);
     }
 
-    public void Write(byte value)
+    public void WriteFloat32(float value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<byte>(value);
+        Write(value);
     }
 
-    public void Write(IoVector2 value)
+    public void WriteVector2(IoVector2 value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<IoVector2>(value);
+        Write(value);
     }
 
-    public void Write(IoVector3 value)
+    public void WriteVector3(IoVector3 value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<IoVector3>(value);
+        Write(value);
     }
 
-    public void Write(IoVector4 value)
+    public void WriteVector4(IoVector4 value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write<IoVector4>(value);
+        Write(value);
     }
 
-    public void Write(IoQuaternion value)
+    public void WriteQuaternion(IoQuaternion value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write(value.Q[0]);
-        Write(value.Q[1]);
-        Write(value.Q[2]);
-        Write(value.Q[3]);
+        WriteFloat32(value.Q[0]);
+        WriteFloat32(value.Q[1]);
+        WriteFloat32(value.Q[2]);
+        WriteFloat32(value.Q[3]);
     }
 
     private void WriteHeader(ChunkHeader header)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        Write(header.ChunkTypeFlags);
+        Write(header.ChunkType);
         Write(header.RawChuckSize);
     }
 
