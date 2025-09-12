@@ -7,13 +7,10 @@ using JetBrains.Annotations;
 namespace Razor.FileSystem.Chunks;
 
 [PublicAPI]
-public class MicroChunkHeader(byte chunkType, uint chunkSize)
+public struct MicroChunkHeader(byte chunkType, uint chunkSize)
 {
     public byte ChunkType { get; set; } = chunkType;
     public uint ChunkSize { get; set; } = chunkSize;
-
-    public MicroChunkHeader()
-        : this(0, 0) { }
 
     public void AddSize(uint size)
     {
