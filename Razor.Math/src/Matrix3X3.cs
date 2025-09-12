@@ -425,7 +425,7 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
         y = Vector3.CrossProduct(z, x);
 
         var len = x.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -433,7 +433,7 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
 
         x /= len;
         len = y.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -442,7 +442,7 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
         y /= len;
 
         len = z.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;

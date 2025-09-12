@@ -51,7 +51,7 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
                 Vector4.Swap(ref result.Rows[j], ref result.Rows[i]);
 
                 // Essentially current[i][i] == 0F
-                if (current[i][i] < float.Epsilon)
+                if (float.Abs(current[i][i]) < float.Epsilon)
                 {
                     throw new InvalidOperationException(
                         "The matrix is singular and cannot be inverted."

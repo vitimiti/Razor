@@ -264,7 +264,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
     public static bool SolveLinearSystem(ref Matrix3D system)
     {
         // Essentially system[0][0] == 0F
-        if (system[0][0] < float.Epsilon)
+        if (float.Abs(system[0][0]) < float.Epsilon)
         {
             return false;
         }
@@ -274,7 +274,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         system[2] -= system[2][0] * system[0];
 
         // Essentially system[1][1] == 0F
-        if (system[1][1] < float.Epsilon)
+        if (float.Abs(system[1][1]) < float.Epsilon)
         {
             return false;
         }
@@ -283,7 +283,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         system[2] -= system[2][1] * system[1];
 
         // Essentially system[2][2] == 0F
-        if (system[2][2] < float.Epsilon)
+        if (float.Abs(system[2][2]) < float.Epsilon)
         {
             return false;
         }
@@ -607,7 +607,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinPosition;
         float cosPosition;
         // Essentially len1 != 0F
-        if (len1 is < float.Epsilon or > float.Epsilon)
+        if (float.Abs(len1) > float.Epsilon)
         {
             sinPosition = dz / len1;
             cosPosition = len2 / len1;
@@ -621,7 +621,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (len2 is < float.Epsilon or > float.Epsilon)
+        if (float.Abs(len2) > float.Epsilon)
         {
             sinYaw = dy / len2;
             cosYaw = dx / len2;
@@ -665,7 +665,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinPosition;
         float cosPosition;
         // Essentially len1 != 0F
-        if (len1 is < float.Epsilon or > float.Epsilon)
+        if (float.Abs(len1) > float.Epsilon)
         {
             sinPosition = dz / len1;
             cosPosition = len2 / len1;
@@ -679,7 +679,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (len2 is < float.Epsilon or > float.Epsilon)
+        if (float.Abs(len2) > float.Epsilon)
         {
             sinYaw = dy / len2;
             cosYaw = dx / len2;
@@ -959,7 +959,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (len2 is < float.Epsilon or > float.Epsilon)
+        if (float.Abs(len2) > float.Epsilon)
         {
             sinYaw = direction.Y / len2;
             cosYaw = direction.X / len2;
@@ -1055,7 +1055,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         y = Vector3.CrossProduct(z, x);
 
         var len = x.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -1063,7 +1063,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
 
         x *= 1F / len;
         len = y.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -1071,7 +1071,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
 
         y *= 1F / len;
         len = z.Length;
-        if (len < float.Epsilon)
+        if (float.Abs(len) < float.Epsilon)
         {
             MakeIdentity();
             return;

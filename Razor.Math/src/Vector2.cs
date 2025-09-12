@@ -57,7 +57,7 @@ public class Vector2 : IEqualityComparer<Vector2>
     public static Vector2 Normalize(Vector2 vector)
     {
         var len2 = vector.Length2;
-        if (len2 < float.Epsilon) // Basically 0F
+        if (float.Abs(len2) < float.Epsilon) // Basically 0F
         {
             return vector;
         }
@@ -125,7 +125,7 @@ public class Vector2 : IEqualityComparer<Vector2>
     public void Normalize()
     {
         var len2 = Length2;
-        if (len2 < float.Epsilon) // Basically 0F
+        if (float.Abs(len2) < float.Epsilon) // Basically 0F
         {
             return;
         }
