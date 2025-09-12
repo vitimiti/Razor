@@ -9,14 +9,27 @@ using Razor.FileSystem.Io;
 namespace Razor.FileSystem.Chunks;
 
 [PublicAPI]
-public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDisposable
+public sealed class ChunkWriter : IDisposable
 {
     private readonly Stack<(long Position, ChunkHeader Header)> _chunkStack = new();
 
     private MicroChunkInfo? _currentMicroChunk;
     private bool _disposed;
+    private readonly Stream _stream;
+    private readonly bool _leaveOpen;
 
-    public Stream BaseStream => stream;
+    public ChunkWriter(Stream stream, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _leaveOpen = leaveOpen;
+    }
+
+    public Stream BaseStream => _stream;
 
     public int CurrentChunkDepth => _chunkStack.Count;
 
@@ -39,9 +52,9 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
             EndChunk();
         }
 
-        if (!leaveOpen)
+        if (!_leaveOpen)
         {
-            stream.Dispose();
+            _stream.Dispose();
         }
 
         _disposed = true;
@@ -86,7 +99,7 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
             throw new InvalidOperationException("No chunk is currently open.");
         }
 
-        stream.Write(buffer);
+        _stream.Write(buffer);
         UpdateChunkSizes(buffer.Length);
     }
 
@@ -209,7 +222,7 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         }
 
         ChunkHeader chunkHeader = new(chunkId, 0);
-        var position = stream.Position;
+        var position = _stream.Position;
 
         WriteHeader(chunkHeader);
         _chunkStack.Push((position, chunkHeader));
@@ -227,14 +240,14 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
             throw new InvalidOperationException("No chunk is currently open.");
         }
 
-        var currentPos = stream.Position;
+        var currentPos = _stream.Position;
         var (headerPos, header) = _chunkStack.Pop();
 
         header.ChunkSize = (uint)(currentPos - headerPos - (sizeof(uint) * 2));
 
-        stream.Seek(headerPos, SeekOrigin.Begin);
+        _stream.Seek(headerPos, SeekOrigin.Begin);
         WriteHeader(header);
-        stream.Seek(currentPos, SeekOrigin.Begin);
+        _stream.Seek(currentPos, SeekOrigin.Begin);
 
         if (_chunkStack.Count <= 0)
         {
@@ -254,7 +267,7 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         }
 
         var microHeader = new MicroChunkHeader(chunkId, 0);
-        var position = stream.Position;
+        var position = _stream.Position;
 
         WriteMicroHeader(microHeader);
         _currentMicroChunk = new MicroChunkInfo { Position = position, Header = microHeader };
@@ -268,7 +281,7 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         }
 
         var microChunk = _currentMicroChunk.Value;
-        var currentPos = stream.Position;
+        var currentPos = _stream.Position;
 
         // Calculate micro chunk size
         var microChunkHeader = microChunk.Header;
@@ -279,9 +292,9 @@ public sealed class ChunkWriter(Stream stream, bool leaveOpen = false) : IDispos
         }
 
         // Write final micro header
-        stream.Seek(microChunk.Position, SeekOrigin.Begin);
+        _stream.Seek(microChunk.Position, SeekOrigin.Begin);
         WriteMicroHeader(microChunk.Header);
-        stream.Seek(currentPos, SeekOrigin.Begin);
+        _stream.Seek(currentPos, SeekOrigin.Begin);
 
         _currentMicroChunk = null;
     }

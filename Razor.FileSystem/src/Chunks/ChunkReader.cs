@@ -9,11 +9,24 @@ using Razor.FileSystem.Io;
 namespace Razor.FileSystem.Chunks;
 
 [PublicAPI]
-public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDisposable
+public sealed class ChunkReader : IDisposable
 {
+    private readonly bool _leaveOpen;
     private readonly Stack<ChunkState> _chunkStack = new();
+
     private MicroChunkState? _currentMicroChunk;
     private bool _disposed;
+
+    public ChunkReader(Stream stream, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        BaseStream = stream;
+        _leaveOpen = leaveOpen;
+    }
 
     public uint CurrentChunkId => _chunkStack.Count > 0 ? _chunkStack.Peek().Header.ChunkType : 0;
 
@@ -26,7 +39,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
         _chunkStack.Count > 0 && _chunkStack.Peek().Header.ContainsSubChunks;
 
     public int CurrentChunkDepth => _chunkStack.Count;
-    public Stream BaseStream => stream;
+    public Stream BaseStream { get; }
 
     public void Dispose()
     {
@@ -35,9 +48,9 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
             return;
         }
 
-        if (!leaveOpen)
+        if (!_leaveOpen)
         {
-            stream.Dispose();
+            BaseStream.Dispose();
         }
 
         _disposed = true;
@@ -45,6 +58,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public void ReadChunks(Action<ChunkInfo, ChunkReader> readAction)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         foreach (var chunk in EnumerateChunks())
         {
             readAction(chunk, this);
@@ -53,6 +68,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public void ReadMicroChunks(Action<MicroChunkInfo, ChunkReader> readAction)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         foreach (var microChunk in EnumerateMicroChunks())
         {
             readAction(microChunk, this);
@@ -61,6 +78,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public IEnumerable<ChunkInfo> EnumerateChunks()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         while (OpenChunk())
         {
             try
@@ -80,6 +99,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public IEnumerable<MicroChunkInfo> EnumerateMicroChunks()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         while (OpenMicroChunk())
         {
             try
@@ -95,6 +116,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public int Read(Span<byte> buffer)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (_chunkStack.Count == 0)
         {
             throw new InvalidOperationException("No chunk opened");
@@ -108,7 +131,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
         var bytesToRead = int.Min(buffer.Length, maxBytes);
         var actualBuffer = buffer[..bytesToRead];
-        var bytesRead = stream.Read(actualBuffer);
+        var bytesRead = BaseStream.Read(actualBuffer);
 
         UpdateBytesRead(bytesRead);
         return bytesRead;
@@ -117,6 +140,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
     public T Read<T>()
         where T : unmanaged
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         unsafe
         {
             T value;
@@ -131,6 +156,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public string ReadString(Encoding? encoding = null, int maxLength = 1024)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         encoding ??= Encoding.UTF8;
         var buffer = new byte[maxLength];
         var length = 0;
@@ -156,6 +183,8 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public byte[] ReadBytes(int count)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var buffer = new byte[count];
         var bytesRead = Read(buffer);
         if (bytesRead != count)
@@ -168,55 +197,63 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
 
     public int ReadInt32()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return Read<int>();
     }
 
     public uint ReadUInt32()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return Read<uint>();
     }
 
     public float ReadFloat()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return Read<float>();
     }
 
     public byte ReadByte()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return Read<byte>();
     }
 
     public IoVector2 ReadVector2()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return new IoVector2(ReadFloat(), ReadFloat());
     }
 
     public IoVector3 ReadVector3()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return new IoVector3(ReadFloat(), ReadFloat(), ReadFloat());
     }
 
     public IoVector4 ReadVector4()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return new IoVector4(ReadFloat(), ReadFloat(), ReadFloat(), ReadFloat());
     }
 
     public IoQuaternion ReadQuaternion()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return new IoQuaternion() { Q = [ReadFloat(), ReadFloat(), ReadFloat(), ReadFloat()] };
     }
 
     private uint ReadUInt32Direct()
     {
         Span<byte> buffer = stackalloc byte[4];
-        return stream.Read(buffer) != 4
+        return BaseStream.Read(buffer) != 4
             ? throw new EndOfStreamException()
             : BitConverter.ToUInt32(buffer);
     }
 
     private byte ReadByteDirect()
     {
-        var b = stream.ReadByte();
+        var b = BaseStream.ReadByte();
         return b == -1 ? throw new EndOfStreamException() : (byte)b;
     }
 
@@ -281,7 +318,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
             }
         }
 
-        if (stream.Length - stream.Position < sizeof(uint) * 2)
+        if (BaseStream.Length - BaseStream.Position < sizeof(uint) * 2)
             return false;
 
         var header = new ChunkHeader
@@ -293,7 +330,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
         var chunkState = new ChunkState
         {
             Header = header,
-            StartPosition = stream.Position,
+            StartPosition = BaseStream.Position,
             BytesRead = 0,
         };
 
@@ -319,7 +356,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
         if (chunk.BytesRead < chunk.Header.ChunkSize)
         {
             var remainingBytes = chunk.Header.ChunkSize - chunk.BytesRead;
-            stream.Seek(remainingBytes, SeekOrigin.Current);
+            BaseStream.Seek(remainingBytes, SeekOrigin.Current);
         }
 
         if (_chunkStack.Count <= 0)
@@ -372,7 +409,7 @@ public sealed class ChunkReader(Stream stream, bool leaveOpen = false) : IDispos
         if (microChunk.BytesRead < microChunk.Header.ChunkSize)
         {
             var remainingBytes = microChunk.Header.ChunkSize - microChunk.BytesRead;
-            stream.Seek(remainingBytes, SeekOrigin.Current);
+            BaseStream.Seek(remainingBytes, SeekOrigin.Current);
             UpdateBytesRead((int)remainingBytes);
         }
 
