@@ -18,6 +18,24 @@ public class Quaternion
 
     public Quaternion() { }
 
+    public Quaternion(float x, float y, float z, float w)
+    {
+        X = x;
+        Y = y;
+        Z = z;
+        W = w;
+    }
+
+    public Quaternion(Vector3 axis, float angle)
+    {
+        var sin = float.Sin(angle / 2F);
+        var cos = float.Cos(angle / 2F);
+        X = sin * axis.X;
+        Y = sin * axis.Y;
+        Z = sin * axis.Z;
+        W = cos;
+    }
+
     public static Quaternion Build(Matrix3D matrix)
     {
         Quaternion result = new();
@@ -108,6 +126,130 @@ public class Quaternion
         result.W = beta * p.W + alpha * q.W;
 
         return result;
+    }
+
+    public static Quaternion FastSlerp(Quaternion p, Quaternion q, float alpha)
+    {
+        var cosT = float.Pow(p.X, 2) + float.Pow(p.Y, 2) + float.Pow(p.Z, 2) + float.Pow(p.W, 2);
+
+        bool qFlip;
+        if (cosT < 0F)
+        {
+            cosT = -cosT;
+            qFlip = true;
+        }
+        else
+        {
+            qFlip = false;
+        }
+
+        float beta;
+        if (1F - cosT < float.Pow(float.Epsilon, 2))
+        {
+            beta = 1F - alpha;
+        }
+        else { }
+
+        throw new NotImplementedException();
+    }
+
+    public static Quaternion Trackball(float x0, float y0, float x1, float y1, float sphSize)
+    {
+        if (System.Math.Abs(x0 - x1) < float.Epsilon && System.Math.Abs(y0 - y1) < float.Epsilon)
+        {
+            return new Quaternion(0F, 0F, 0F, 1F);
+        }
+
+        Vector3 p1 = new();
+        Vector3 p2 = new();
+
+        p1[0] = x0;
+        p1[1] = y0;
+        p1[2] = ProjectToSphere(sphSize, x0, y0);
+
+        p2[0] = x1;
+        p2[1] = y1;
+        p2[2] = ProjectToSphere(sphSize, x1, y1);
+
+        var a = Vector3.CrossProduct(p2, p1);
+
+        var d = p1 - p2;
+        var t = d.Length / (2F * sphSize);
+        t = float.Clamp(t, -1F, 1F);
+        var phi = 2F * float.Asin(t);
+
+        return AxisToQuat(a, phi);
+    }
+
+    public static Quaternion AxisToQuat(Vector3 axis, float phi)
+    {
+        Quaternion quaternion = new();
+        var tmp = axis;
+
+        tmp.Normalize();
+        quaternion[0] = tmp[0];
+        quaternion[1] = tmp[1];
+        quaternion[2] = tmp[2];
+
+        throw new NotImplementedException();
+        // quaternion.Scale(float.Sin(phi / 2F));
+        quaternion[3] = float.Cos(phi / 2F);
+
+        return quaternion;
+    }
+
+    public void Normalize()
+    {
+        var len2 = float.Pow(X, 2) + float.Pow(Y, 2) + float.Pow(Z, 2) + float.Pow(W, 2);
+        if (len2 < float.Epsilon) // Basically 0F
+        {
+            return;
+        }
+
+        var invMag = ExtraMath.InvSqrt(len2);
+        X *= invMag;
+        Y *= invMag;
+        Z *= invMag;
+        W *= invMag;
+    }
+
+    public Quaternion MakeClosest(Quaternion quaternion)
+    {
+        var cosT =
+            float.Pow(quaternion.X, 2)
+            + float.Pow(quaternion.Y, 2)
+            + float.Pow(quaternion.Z, 2)
+            + float.Pow(quaternion.W, 2);
+
+        if (cosT >= 0F)
+        {
+            return this;
+        }
+
+        X = -X;
+        Y = -Y;
+        Z = -Z;
+        W = -W;
+
+        return this;
+    }
+
+    private static float ProjectToSphere(float r, float x, float y)
+    {
+        var d = float.Sqrt(float.Pow(x, 2) + float.Pow(y, 2));
+
+        float z;
+        if (d < r * (ExtraMath.Sqrt2 / 2F))
+        {
+            z = float.Sqrt(float.Pow(r, 2) - float.Pow(d, 2));
+        }
+        else
+        {
+            var t = r / ExtraMath.Sqrt2;
+            z = float.Pow(t, 2) / d;
+        }
+
+        return z;
     }
 
     public float this[int index]

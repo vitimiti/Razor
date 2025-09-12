@@ -9,6 +9,14 @@ namespace Razor.Math;
 [PublicAPI]
 public static class ExtraMath
 {
+    private const int ArcTableSize = 0x0400;
+
+    private static readonly float[] s_fastAcosTable = new float[ArcTableSize];
+
+    public const float Sqrt2 = 1.41421356F;
+
+    static ExtraMath() { }
+
     public static float InvSqrt(float value, bool fast = true)
     {
         if (!fast)
@@ -48,5 +56,30 @@ public static class ExtraMath
     public static bool IsValid(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
+    public static float FastAcos(float value)
+    {
+        if (float.Abs(value) > 0.975F)
+        {
+            return float.Acos(value);
+        }
+
+        value *= ArcTableSize / 2F;
+
+        var idx0 = (int)float.Floor(value);
+        var idx1 = idx0 + 1;
+        var frac = value - idx0;
+
+        idx0 += ArcTableSize / 2;
+        idx1 += ArcTableSize / 2;
+
+        ArgumentOutOfRangeException.ThrowIfLessThan(idx0, 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(idx0, ArcTableSize);
+        ArgumentOutOfRangeException.ThrowIfLessThan(idx1, 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(idx1, ArcTableSize);
+
+        throw new NotImplementedException();
+        // return (1F - frac) *
     }
 }
