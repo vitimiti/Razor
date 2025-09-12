@@ -98,7 +98,7 @@ public sealed class BigArchiveStream : Stream
 
     public BigFileStream OpenEntry(string pathInArchive)
     {
-        pathInArchive = Normalize(pathInArchive);
+        pathInArchive = pathInArchive.PathNormalized();
         if (!_entries.TryGetValue(pathInArchive, out var entry))
         {
             throw new FileNotFoundException(
@@ -147,17 +147,17 @@ public sealed class BigArchiveStream : Stream
 
     public bool TryGetEntry(string pathInArchive, out BigArchiveEntry entry)
     {
-        return _entries.TryGetValue(Normalize(pathInArchive), out entry);
+        return _entries.TryGetValue(pathInArchive.PathNormalized(), out entry);
     }
 
     public bool ContainsEntry(string pathInArchive)
     {
-        return _entries.ContainsKey(Normalize(pathInArchive));
+        return _entries.ContainsKey(pathInArchive.PathNormalized());
     }
 
     public uint GetEntrySize(string pathInArchive)
     {
-        pathInArchive = Normalize(pathInArchive);
+        pathInArchive = pathInArchive.PathNormalized();
         return !_entries.TryGetValue(pathInArchive, out var entry)
             ? throw new FileNotFoundException($"Entry not found: {pathInArchive}", pathInArchive)
             : entry.Size;
@@ -165,7 +165,7 @@ public sealed class BigArchiveStream : Stream
 
     public bool TryGetEntrySize(string pathInArchive, out uint size)
     {
-        pathInArchive = Normalize(pathInArchive);
+        pathInArchive = pathInArchive.PathNormalized();
         if (_entries.TryGetValue(pathInArchive, out var entry))
         {
             size = entry.Size;
@@ -202,8 +202,6 @@ public sealed class BigArchiveStream : Stream
         }
     }
 
-    private static string Normalize(string path) => path.Replace('\\', '/').ToLowerInvariant();
-
     private static Dictionary<string, BigArchiveEntry> ParseTableOfContents(MemoryStream archive)
     {
         var entries = new Dictionary<string, BigArchiveEntry>(StringComparer.OrdinalIgnoreCase);
@@ -238,7 +236,7 @@ public sealed class BigArchiveStream : Stream
 
             // Zero-terminated ANSI path
             var nameBytes = ReadString(reader);
-            var normalized = Normalize(EncodingExtensions.Ansi.GetString(nameBytes));
+            var normalized = EncodingExtensions.Ansi.GetString(nameBytes).PathNormalized();
 
             entries[normalized] = new BigArchiveEntry(offset, size);
         }
