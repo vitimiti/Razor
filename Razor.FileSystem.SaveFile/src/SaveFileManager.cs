@@ -21,13 +21,36 @@ public static partial class SaveFileManager
         Directory.CreateDirectory(directoryPath);
 
         var idx = GetNextAvailableIndex(directoryPath);
-        var fileName = $"{idx:0000000000000000}.sav";
-        var fullPath = Path.Combine(directoryPath, fileName);
 
-        using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        BinaryGameStateSerializer.Save(fs, displayName, roots);
+        while (true)
+        {
+            var fileName = $"{idx:D16}.sav";
+            var fullPath = Path.Combine(directoryPath, fileName);
 
-        return fullPath;
+            try
+            {
+                using var fs = new FileStream(
+                    fullPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None
+                );
+                BinaryGameStateSerializer.Save(fs, displayName, roots);
+
+                return fullPath;
+            }
+            catch (Exception exception)
+            {
+                if (exception is not IOException || !File.Exists(fullPath))
+                {
+                    throw;
+                }
+
+                // If the file already exists, another process/thread won the race for this index.
+                // Increment and retry. If it's some other error, let it bubble up.
+                idx++;
+            }
+        }
     }
 
     public static IReadOnlyList<ISerializableObject> Load(string path, out string? displayName)
@@ -46,14 +69,14 @@ public static partial class SaveFileManager
     [GeneratedRegex(@"^\d{16}\.sav$", RegexOptions.Compiled)]
     private static partial Regex SaveFileNameRegex();
 
-    private static int GetNextAvailableIndex(string directoryPath)
+    private static ulong GetNextAvailableIndex(string directoryPath)
     {
         if (!Directory.Exists(directoryPath))
         {
-            return 0;
+            return 0UL;
         }
 
-        var used = new HashSet<int>();
+        var used = new HashSet<ulong>();
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*.sav"))
         {
             var name = Path.GetFileName(file);
@@ -62,19 +85,16 @@ public static partial class SaveFileManager
                 continue;
             }
 
-            if (!int.TryParse(Path.GetFileNameWithoutExtension(name), out var n))
+            if (!ulong.TryParse(Path.GetFileNameWithoutExtension(name), out var n))
             {
                 continue;
             }
 
-            if (n >= 0)
-            {
-                used.Add(n);
-            }
+            used.Add(n);
         }
 
-        // Find the smallest missing non-negative integer
-        var candidate = 0;
+        // Find the smallest missing integer
+        var candidate = 0UL;
         while (used.Contains(candidate))
         {
             candidate++;
