@@ -155,32 +155,32 @@ public class Rect : IEqualityComparer<Rect>
         return obj is Rect other && Equals(this, other);
     }
 
-    public bool Equals(Rect? left, Rect? right)
+    public bool Equals(Rect? x, Rect? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return float.Abs(left.Left - right.Left) < float.Epsilon
-            && float.Abs(left.Top - right.Top) < float.Epsilon
-            && float.Abs(left.Right - right.Right) < float.Epsilon
-            && float.Abs(left.Bottom - right.Bottom) < float.Epsilon;
+        return float.Abs(x.Left - y.Left) < float.Epsilon
+            && float.Abs(x.Top - y.Top) < float.Epsilon
+            && float.Abs(x.Right - y.Right) < float.Epsilon
+            && float.Abs(x.Bottom - y.Bottom) < float.Epsilon;
     }
 
     public override int GetHashCode()
@@ -213,13 +213,13 @@ public class Rect : IEqualityComparer<Rect>
         return (Left, Top, Right, Bottom);
     }
 
-    public static Rect operator +(Rect left, Rect right)
+    public static Rect operator +(Rect x, Rect y)
     {
         return new Rect(
-            float.Min(left.Left, right.Left),
-            float.Min(left.Top, right.Top),
-            float.Max(left.Right, right.Right),
-            float.Max(left.Bottom, right.Bottom)
+            float.Min(x.Left, y.Left),
+            float.Min(x.Top, y.Top),
+            float.Max(x.Right, y.Right),
+            float.Max(x.Bottom, y.Bottom)
         );
     }
 
@@ -243,34 +243,34 @@ public class Rect : IEqualityComparer<Rect>
         );
     }
 
-    public static Rect operator *(Rect rect, float scalar)
+    public static Rect operator *(Rect obj, float scalar)
     {
         return new Rect(
-            rect.Left * scalar,
-            rect.Top * scalar,
-            rect.Right * scalar,
-            rect.Bottom * scalar
+            obj.Left * scalar,
+            obj.Top * scalar,
+            obj.Right * scalar,
+            obj.Bottom * scalar
         );
     }
 
-    public static Rect operator *(float scalar, Rect rect)
+    public static Rect operator *(float scalar, Rect obj)
     {
-        return rect * scalar;
+        return obj * scalar;
     }
 
-    public static Rect operator /(Rect rect, float scalar)
+    public static Rect operator /(Rect obj, float scalar)
     {
         var oScalar = 1F / scalar;
-        return rect * oScalar;
+        return obj * oScalar;
     }
 
-    public static bool operator ==(Rect left, Rect right)
+    public static bool operator ==(Rect x, Rect y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Rect left, Rect right)
+    public static bool operator !=(Rect x, Rect y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

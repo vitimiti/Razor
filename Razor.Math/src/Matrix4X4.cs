@@ -77,6 +77,47 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
         }
     }
 
+    public Vector4 this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => Rows[0],
+                1 => Rows[1],
+                2 => Rows[2],
+                3 => Rows[3],
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "Index must be between 0 and 3."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    Rows[0] = value;
+                    break;
+                case 1:
+                    Rows[1] = value;
+                    break;
+                case 2:
+                    Rows[2] = value;
+                    break;
+                case 3:
+                    Rows[3] = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 3."
+                    );
+            }
+        }
+    }
+
     public Matrix4X4()
     {
         Rows = new Vector4[4];
@@ -284,29 +325,29 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
         return obj is Matrix4X4 matrix && Equals(this, matrix);
     }
 
-    public bool Equals(Matrix4X4? left, Matrix4X4? right)
+    public bool Equals(Matrix4X4? x, Matrix4X4? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return !Rows.Where((_, i) => left.Rows[i] != right.Rows[i]).Any();
+        return !Rows.Where((_, i) => x.Rows[i] != y.Rows[i]).Any();
     }
 
     public override int GetHashCode()
@@ -339,68 +380,27 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
         return (Rows[0], Rows[1], Rows[2], Rows[3]);
     }
 
-    public Vector4 this[int index]
-    {
-        get =>
-            index switch
-            {
-                0 => Rows[0],
-                1 => Rows[1],
-                2 => Rows[2],
-                3 => Rows[3],
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "Index must be between 0 and 3."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    Rows[0] = value;
-                    break;
-                case 1:
-                    Rows[1] = value;
-                    break;
-                case 2:
-                    Rows[2] = value;
-                    break;
-                case 3:
-                    Rows[3] = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "The index must be between 0 and 3."
-                    );
-            }
-        }
-    }
-
-    public static Matrix4X4 operator +(Matrix4X4 left, Matrix4X4 right)
+    public static Matrix4X4 operator +(Matrix4X4 x, Matrix4X4 y)
     {
         return new Matrix4X4(
-            left.Rows[0] + right.Rows[0],
-            left.Rows[1] + right.Rows[1],
-            left.Rows[2] + right.Rows[2],
-            left.Rows[3] + right.Rows[3]
+            x.Rows[0] + y.Rows[0],
+            x.Rows[1] + y.Rows[1],
+            x.Rows[2] + y.Rows[2],
+            x.Rows[3] + y.Rows[3]
         );
     }
 
-    public static Matrix4X4 operator -(Matrix4X4 left, Matrix4X4 right)
+    public static Matrix4X4 operator -(Matrix4X4 x, Matrix4X4 y)
     {
         return new Matrix4X4(
-            left.Rows[0] - right.Rows[0],
-            left.Rows[1] - right.Rows[1],
-            left.Rows[2] - right.Rows[2],
-            left.Rows[3] - right.Rows[3]
+            x.Rows[0] - y.Rows[0],
+            x.Rows[1] - y.Rows[1],
+            x.Rows[2] - y.Rows[2],
+            x.Rows[3] - y.Rows[3]
         );
     }
 
-    public static Matrix4X4 operator *(Matrix4X4 left, Matrix4X4 right)
+    public static Matrix4X4 operator *(Matrix4X4 x, Matrix4X4 y)
     {
         return new Matrix4X4(
             new Vector4(
@@ -431,29 +431,29 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column]
-                + left[row][3] * right[3][column];
+            return x[row][0] * y[0][column]
+                + x[row][1] * y[1][column]
+                + x[row][2] * y[2][column]
+                + x[row][3] * y[3][column];
         }
     }
 
-    public static Matrix4X4 operator *(Matrix4X4 matrix, float scalar)
+    public static Matrix4X4 operator *(Matrix4X4 obj, float scalar)
     {
         return new Matrix4X4(
-            matrix.Rows[0] * scalar,
-            matrix.Rows[1] * scalar,
-            matrix.Rows[2] * scalar,
-            matrix.Rows[3] * scalar
+            obj.Rows[0] * scalar,
+            obj.Rows[1] * scalar,
+            obj.Rows[2] * scalar,
+            obj.Rows[3] * scalar
         );
     }
 
-    public static Matrix4X4 operator *(float scalar, Matrix4X4 matrix)
+    public static Matrix4X4 operator *(float scalar, Matrix4X4 obj)
     {
-        return matrix * scalar;
+        return obj * scalar;
     }
 
-    public static Matrix4X4 operator *(Matrix4X4 left, Matrix3D right)
+    public static Matrix4X4 operator *(Matrix4X4 matrix4X4, Matrix3D matrix3D)
     {
         return new Matrix4X4(
             new Vector4(
@@ -484,21 +484,21 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column];
+            return matrix4X4[row][0] * matrix3D[0][column]
+                + matrix4X4[row][1] * matrix3D[1][column]
+                + matrix4X4[row][2] * matrix3D[2][column];
         }
 
         float DefineRowColumnLast(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column]
-                + left[row][3];
+            return matrix4X4[row][0] * matrix3D[0][column]
+                + matrix4X4[row][1] * matrix3D[1][column]
+                + matrix4X4[row][2] * matrix3D[2][column]
+                + matrix4X4[row][3];
         }
     }
 
-    public static Matrix4X4 operator *(Matrix3D left, Matrix4X4 right)
+    public static Matrix4X4 operator *(Matrix3D matrix3D, Matrix4X4 matrix4X4)
     {
         return new Matrix4X4(
             new Vector4(
@@ -519,15 +519,15 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
                 DefineRowColumn(2, 2),
                 DefineRowColumn(2, 3)
             ),
-            new Vector4(right[3][0], right[3][1], right[3][2], right[3][3])
+            new Vector4(matrix4X4[3][0], matrix4X4[3][1], matrix4X4[3][2], matrix4X4[3][3])
         );
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column]
-                + left[row][3] * right[3][column];
+            return matrix3D[row][0] * matrix4X4[0][column]
+                + matrix3D[row][1] * matrix4X4[1][column]
+                + matrix3D[row][2] * matrix4X4[2][column]
+                + matrix3D[row][3] * matrix4X4[3][column];
         }
     }
 
@@ -575,29 +575,29 @@ public class Matrix4X4 : IEqualityComparer<Matrix4X4>
         );
     }
 
-    public static Matrix4X4 operator /(Matrix4X4 matrix, float scalar)
+    public static Matrix4X4 operator /(Matrix4X4 obj, float scalar)
     {
         var oOd = 1F / scalar;
         return new Matrix4X4(
-            matrix.Rows[0] * oOd,
-            matrix.Rows[1] * oOd,
-            matrix.Rows[2] * oOd,
-            matrix.Rows[3] * oOd
+            obj.Rows[0] * oOd,
+            obj.Rows[1] * oOd,
+            obj.Rows[2] * oOd,
+            obj.Rows[3] * oOd
         );
     }
 
-    public static Matrix4X4 operator -(Matrix4X4 matrix)
+    public static Matrix4X4 operator -(Matrix4X4 obj)
     {
-        return new Matrix4X4(-matrix.Rows[0], -matrix.Rows[1], -matrix.Rows[2], -matrix.Rows[3]);
+        return new Matrix4X4(-obj.Rows[0], -obj.Rows[1], -obj.Rows[2], -obj.Rows[3]);
     }
 
-    public static bool operator ==(Matrix4X4 left, Matrix4X4 right)
+    public static bool operator ==(Matrix4X4 x, Matrix4X4 y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Matrix4X4 left, Matrix4X4 right)
+    public static bool operator !=(Matrix4X4 x, Matrix4X4 y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

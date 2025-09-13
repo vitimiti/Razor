@@ -46,6 +46,43 @@ public class Vector3 : IEqualityComparer<Vector3>
 
     public bool IsValid => ExtraMath.IsValid(X) && ExtraMath.IsValid(Y) && ExtraMath.IsValid(Z);
 
+    public float this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "The index must be between 0 and 2."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    break;
+                case 1:
+                    Y = value;
+                    break;
+                case 2:
+                    Z = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 2."
+                    );
+            }
+        }
+    }
+
     public Vector3() { }
 
     public Vector3(float x, float y, float z)
@@ -306,31 +343,31 @@ public class Vector3 : IEqualityComparer<Vector3>
         return obj is Vector3 other && Equals(this, other);
     }
 
-    public bool Equals(Vector3? left, Vector3? right)
+    public bool Equals(Vector3? x, Vector3? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return float.Abs(left.X - right.X) < float.Epsilon
-            && float.Abs(left.Y - right.Y) < float.Epsilon
-            && float.Abs(left.Z - right.Z) < float.Epsilon;
+        return float.Abs(x.X - y.X) < float.Epsilon
+            && float.Abs(x.Y - y.Y) < float.Epsilon
+            && float.Abs(x.Z - y.Z) < float.Epsilon;
     }
 
     public override int GetHashCode()
@@ -361,93 +398,6 @@ public class Vector3 : IEqualityComparer<Vector3>
     public (float X, float Y, float Z) Deconstruct()
     {
         return (X, Y, Z);
-    }
-
-    public float this[int index]
-    {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "The index must be between 0 and 2."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "The index must be between 0 and 2."
-                    );
-            }
-        }
-    }
-
-    public static Vector3 operator +(Vector3 left, Vector3 right)
-    {
-        return new Vector3(left.X + right.X, left.Y + right.Y, left.Z + right.Z);
-    }
-
-    public static Vector3 operator -(Vector3 left, Vector3 right)
-    {
-        return new Vector3(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
-    }
-
-    public static float operator *(Vector3 left, Vector3 right)
-    {
-        return left.X * right.X + left.Y * right.Y + left.Z * right.Z;
-    }
-
-    public static Vector3 operator *(Vector3 vector, float scalar)
-    {
-        return new Vector3(vector.X * scalar, vector.Y * scalar, vector.Z * scalar);
-    }
-
-    public static Vector3 operator *(float scalar, Vector3 vector)
-    {
-        return vector * scalar;
-    }
-
-    public static Vector3 operator /(Vector3 vector, float scalar)
-    {
-        return new Vector3(vector.X / scalar, vector.Y / scalar, vector.Z / scalar);
-    }
-
-    public static Vector3 operator -(Vector3 vector)
-    {
-        return new Vector3(-vector.X, -vector.Y, -vector.Z);
-    }
-
-    public static Vector3 operator +(Vector3 vector)
-    {
-        return vector;
-    }
-
-    public static bool operator ==(Vector3 left, Vector3 right)
-    {
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(Vector3 left, Vector3 right)
-    {
-        return !left.Equals(right);
     }
 
     private void CapAbsoluteToXComponent(Vector3 other)
@@ -502,5 +452,55 @@ public class Vector3 : IEqualityComparer<Vector3>
                 Z = -other.Z;
             }
         }
+    }
+
+    public static Vector3 operator +(Vector3 x, Vector3 y)
+    {
+        return new Vector3(x.X + y.X, x.Y + y.Y, x.Z + y.Z);
+    }
+
+    public static Vector3 operator -(Vector3 x, Vector3 y)
+    {
+        return new Vector3(x.X - y.X, x.Y - y.Y, x.Z - y.Z);
+    }
+
+    public static float operator *(Vector3 x, Vector3 y)
+    {
+        return x.X * y.X + x.Y * y.Y + x.Z * y.Z;
+    }
+
+    public static Vector3 operator *(Vector3 obj, float scalar)
+    {
+        return new Vector3(obj.X * scalar, obj.Y * scalar, obj.Z * scalar);
+    }
+
+    public static Vector3 operator *(float scalar, Vector3 obj)
+    {
+        return obj * scalar;
+    }
+
+    public static Vector3 operator /(Vector3 obj, float scalar)
+    {
+        return new Vector3(obj.X / scalar, obj.Y / scalar, obj.Z / scalar);
+    }
+
+    public static Vector3 operator -(Vector3 obj)
+    {
+        return new Vector3(-obj.X, -obj.Y, -obj.Z);
+    }
+
+    public static Vector3 operator +(Vector3 obj)
+    {
+        return obj;
+    }
+
+    public static bool operator ==(Vector3 x, Vector3 y)
+    {
+        return x.Equals(y);
+    }
+
+    public static bool operator !=(Vector3 x, Vector3 y)
+    {
+        return !x.Equals(y);
     }
 }

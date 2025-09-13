@@ -13,75 +13,6 @@ public class Vector3I16 : IEqualityComparer<Vector3I16>
     public ushort J { get; set; }
     public ushort K { get; set; }
 
-    public Vector3I16() { }
-
-    public Vector3I16(ushort i, ushort j, ushort k)
-    {
-        I = i;
-        J = j;
-        K = k;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is Vector3I16 other && Equals(this, other);
-    }
-
-    public bool Equals(Vector3I16? left, Vector3I16? right)
-    {
-        if (ReferenceEquals(left, right))
-        {
-            return true;
-        }
-
-        if (left is null)
-        {
-            return false;
-        }
-
-        if (right is null)
-        {
-            return false;
-        }
-
-        if (left.GetType() != right.GetType())
-        {
-            return false;
-        }
-
-        return left.I == right.I && left.J == right.J && left.K == right.K;
-    }
-
-    public override int GetHashCode()
-    {
-        return GetHashCode(this);
-    }
-
-    public int GetHashCode(Vector3I16 obj)
-    {
-        return HashCode.Combine(obj.I, obj.J, obj.K);
-    }
-
-    public override string ToString()
-    {
-        return $"({I}, {J}, {K})";
-    }
-
-    public string ToString(string? format)
-    {
-        return $"({I.ToString(format)}, {J.ToString(format)}, {K.ToString(format)})";
-    }
-
-    public string ToString(string? format, IFormatProvider? formatProvider)
-    {
-        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)}, {K.ToString(format, formatProvider)})";
-    }
-
-    public (ushort I, ushort J, ushort K) Deconstruct()
-    {
-        return (I, J, K);
-    }
-
     public ushort this[int index]
     {
         get =>
@@ -119,31 +50,92 @@ public class Vector3I16 : IEqualityComparer<Vector3I16>
         }
     }
 
-    public static Vector3I16 operator +(Vector3I16 left, Vector3I16 right)
+    public Vector3I16() { }
+
+    public Vector3I16(ushort i, ushort j, ushort k)
     {
-        return new Vector3I16(
-            (ushort)(left.I + right.I),
-            (ushort)(left.J + right.J),
-            (ushort)(left.K + right.K)
-        );
+        I = i;
+        J = j;
+        K = k;
     }
 
-    public static Vector3I16 operator -(Vector3I16 left, Vector3I16 right)
+    public override bool Equals(object? obj)
     {
-        return new Vector3I16(
-            (ushort)(left.I - right.I),
-            (ushort)(left.J - right.J),
-            (ushort)(left.K - right.K)
-        );
+        return obj is Vector3I16 other && Equals(this, other);
     }
 
-    public static bool operator ==(Vector3I16 left, Vector3I16 right)
+    public bool Equals(Vector3I16? x, Vector3I16? y)
     {
-        return left.Equals(right);
+        if (ReferenceEquals(x, y))
+        {
+            return true;
+        }
+
+        if (x is null)
+        {
+            return false;
+        }
+
+        if (y is null)
+        {
+            return false;
+        }
+
+        if (x.GetType() != y.GetType())
+        {
+            return false;
+        }
+
+        return x.I == y.I && x.J == y.J && x.K == y.K;
     }
 
-    public static bool operator !=(Vector3I16 left, Vector3I16 right)
+    public override int GetHashCode()
     {
-        return !left.Equals(right);
+        return GetHashCode(this);
+    }
+
+    public int GetHashCode(Vector3I16 obj)
+    {
+        return HashCode.Combine(obj.I, obj.J, obj.K);
+    }
+
+    public override string ToString()
+    {
+        return $"({I}, {J}, {K})";
+    }
+
+    public string ToString(string? format)
+    {
+        return $"({I.ToString(format)}, {J.ToString(format)}, {K.ToString(format)})";
+    }
+
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)}, {K.ToString(format, formatProvider)})";
+    }
+
+    public (ushort I, ushort J, ushort K) Deconstruct()
+    {
+        return (I, J, K);
+    }
+
+    public static Vector3I16 operator +(Vector3I16 x, Vector3I16 y)
+    {
+        return new Vector3I16((ushort)(x.I + y.I), (ushort)(x.J + y.J), (ushort)(x.K + y.K));
+    }
+
+    public static Vector3I16 operator -(Vector3I16 x, Vector3I16 y)
+    {
+        return new Vector3I16((ushort)(x.I - y.I), (ushort)(x.J - y.J), (ushort)(x.K - y.K));
+    }
+
+    public static bool operator ==(Vector3I16 x, Vector3I16 y)
+    {
+        return x.Equals(y);
+    }
+
+    public static bool operator !=(Vector3I16 x, Vector3I16 y)
+    {
+        return !x.Equals(y);
     }
 }

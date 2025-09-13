@@ -12,84 +12,6 @@ public class Vector2I : IEqualityComparer<Vector2I>
     public int I { get; set; }
     public int J { get; set; }
 
-    public Vector2I() { }
-
-    public Vector2I(int i, int j)
-    {
-        Set(i, j);
-    }
-
-    public static void Swap(ref Vector2I left, ref Vector2I right)
-    {
-        (left, right) = (right, left);
-    }
-
-    public void Set(int i, int j)
-    {
-        I = i;
-        J = j;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is Vector2I other && Equals(this, other);
-    }
-
-    public bool Equals(Vector2I? left, Vector2I? right)
-    {
-        if (ReferenceEquals(left, right))
-        {
-            return true;
-        }
-
-        if (left is null)
-        {
-            return false;
-        }
-
-        if (right is null)
-        {
-            return false;
-        }
-
-        if (left.GetType() != right.GetType())
-        {
-            return false;
-        }
-
-        return left.I == right.I && left.J == right.J;
-    }
-
-    public override int GetHashCode()
-    {
-        return GetHashCode(this);
-    }
-
-    public int GetHashCode(Vector2I obj)
-    {
-        return HashCode.Combine(obj.I, obj.J);
-    }
-
-    public override string ToString()
-    {
-        return $"({I}, {J})";
-    }
-
-    public string ToString(string? format)
-    {
-        return $"({I.ToString(format)}, {J.ToString(format)})";
-    }
-
-    public string ToString(string? format, IFormatProvider? formatProvider)
-    {
-        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)})";
-    }
-
-    public (int I, int J) Deconstruct()
-    {
-        return (I, J);
-    }
-
     public int this[int index]
     {
         get =>
@@ -123,23 +45,101 @@ public class Vector2I : IEqualityComparer<Vector2I>
         }
     }
 
-    public static Vector2I operator +(Vector2I left, Vector2I right)
+    public Vector2I() { }
+
+    public Vector2I(int i, int j)
     {
-        return new Vector2I(left.I + right.I, left.J + right.J);
+        Set(i, j);
     }
 
-    public static Vector2I operator -(Vector2I left, Vector2I right)
+    public static void Swap(ref Vector2I left, ref Vector2I right)
     {
-        return new Vector2I(left.I - right.I, left.J - right.J);
+        (left, right) = (right, left);
     }
 
-    public static bool operator ==(Vector2I left, Vector2I right)
+    public void Set(int i, int j)
     {
-        return left.Equals(right);
+        I = i;
+        J = j;
     }
 
-    public static bool operator !=(Vector2I left, Vector2I right)
+    public override bool Equals(object? obj)
     {
-        return !left.Equals(right);
+        return obj is Vector2I other && Equals(this, other);
+    }
+
+    public bool Equals(Vector2I? x, Vector2I? y)
+    {
+        if (ReferenceEquals(x, y))
+        {
+            return true;
+        }
+
+        if (x is null)
+        {
+            return false;
+        }
+
+        if (y is null)
+        {
+            return false;
+        }
+
+        if (x.GetType() != y.GetType())
+        {
+            return false;
+        }
+
+        return x.I == y.I && x.J == y.J;
+    }
+
+    public override int GetHashCode()
+    {
+        return GetHashCode(this);
+    }
+
+    public int GetHashCode(Vector2I obj)
+    {
+        return HashCode.Combine(obj.I, obj.J);
+    }
+
+    public override string ToString()
+    {
+        return $"({I}, {J})";
+    }
+
+    public string ToString(string? format)
+    {
+        return $"({I.ToString(format)}, {J.ToString(format)})";
+    }
+
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)})";
+    }
+
+    public (int I, int J) Deconstruct()
+    {
+        return (I, J);
+    }
+
+    public static Vector2I operator +(Vector2I x, Vector2I y)
+    {
+        return new Vector2I(x.I + y.I, x.J + y.J);
+    }
+
+    public static Vector2I operator -(Vector2I x, Vector2I y)
+    {
+        return new Vector2I(x.I - y.I, x.J - y.J);
+    }
+
+    public static bool operator ==(Vector2I x, Vector2I y)
+    {
+        return x.Equals(y);
+    }
+
+    public static bool operator !=(Vector2I x, Vector2I y)
+    {
+        return !x.Equals(y);
     }
 }

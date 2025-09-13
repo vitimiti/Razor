@@ -13,75 +13,6 @@ public class Vector3I : IEqualityComparer<Vector3I>
     public int J { get; set; }
     public int K { get; set; }
 
-    public Vector3I() { }
-
-    public Vector3I(int i, int j, int k)
-    {
-        I = i;
-        J = j;
-        K = k;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is Vector3I other && Equals(this, other);
-    }
-
-    public bool Equals(Vector3I? left, Vector3I? right)
-    {
-        if (ReferenceEquals(left, right))
-        {
-            return true;
-        }
-
-        if (left is null)
-        {
-            return false;
-        }
-
-        if (right is null)
-        {
-            return false;
-        }
-
-        if (left.GetType() != right.GetType())
-        {
-            return false;
-        }
-
-        return left.I == right.I && left.J == right.J && left.K == right.K;
-    }
-
-    public override int GetHashCode()
-    {
-        return GetHashCode(this);
-    }
-
-    public int GetHashCode(Vector3I obj)
-    {
-        return HashCode.Combine(obj.I, obj.J, obj.K);
-    }
-
-    public override string ToString()
-    {
-        return $"({I}, {J}, {K})";
-    }
-
-    public string ToString(string? format)
-    {
-        return $"({I.ToString(format)}, {J.ToString(format)}, {K.ToString(format)})";
-    }
-
-    public string ToString(string? format, IFormatProvider? formatProvider)
-    {
-        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)}, {K.ToString(format, formatProvider)})";
-    }
-
-    public (int I, int J, int K) Deconstruct()
-    {
-        return (I, J, K);
-    }
-
     public int this[int index]
     {
         get =>
@@ -119,23 +50,92 @@ public class Vector3I : IEqualityComparer<Vector3I>
         }
     }
 
-    public static Vector3I operator +(Vector3I left, Vector3I right)
+    public Vector3I() { }
+
+    public Vector3I(int i, int j, int k)
     {
-        return new Vector3I(left.I + right.I, left.J + right.J, left.K + right.K);
+        I = i;
+        J = j;
+        K = k;
     }
 
-    public static Vector3I operator -(Vector3I left, Vector3I right)
+    public override bool Equals(object? obj)
     {
-        return new Vector3I(left.I - right.I, left.J - right.J, left.K - right.K);
+        return obj is Vector3I other && Equals(this, other);
     }
 
-    public static bool operator ==(Vector3I left, Vector3I right)
+    public bool Equals(Vector3I? x, Vector3I? y)
     {
-        return left.Equals(right);
+        if (ReferenceEquals(x, y))
+        {
+            return true;
+        }
+
+        if (x is null)
+        {
+            return false;
+        }
+
+        if (y is null)
+        {
+            return false;
+        }
+
+        if (x.GetType() != y.GetType())
+        {
+            return false;
+        }
+
+        return x.I == y.I && x.J == y.J && x.K == y.K;
     }
 
-    public static bool operator !=(Vector3I left, Vector3I right)
+    public override int GetHashCode()
     {
-        return !left.Equals(right);
+        return GetHashCode(this);
+    }
+
+    public int GetHashCode(Vector3I obj)
+    {
+        return HashCode.Combine(obj.I, obj.J, obj.K);
+    }
+
+    public override string ToString()
+    {
+        return $"({I}, {J}, {K})";
+    }
+
+    public string ToString(string? format)
+    {
+        return $"({I.ToString(format)}, {J.ToString(format)}, {K.ToString(format)})";
+    }
+
+    public string ToString(string? format, IFormatProvider? formatProvider)
+    {
+        return $"({I.ToString(format, formatProvider)}, {J.ToString(format, formatProvider)}, {K.ToString(format, formatProvider)})";
+    }
+
+    public (int I, int J, int K) Deconstruct()
+    {
+        return (I, J, K);
+    }
+
+    public static Vector3I operator +(Vector3I x, Vector3I y)
+    {
+        return new Vector3I(x.I + y.I, x.J + y.J, x.K + y.K);
+    }
+
+    public static Vector3I operator -(Vector3I x, Vector3I y)
+    {
+        return new Vector3I(x.I - y.I, x.J - y.J, x.K - y.K);
+    }
+
+    public static bool operator ==(Vector3I x, Vector3I y)
+    {
+        return x.Equals(y);
+    }
+
+    public static bool operator !=(Vector3I x, Vector3I y)
+    {
+        return !x.Equals(y);
     }
 }

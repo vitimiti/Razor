@@ -14,6 +14,47 @@ public class Vector4 : IEqualityComparer<Vector4>
     public float Z { get; set; }
     public float W { get; set; }
 
+    public float this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                3 => W,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "The index must be between 0 and 4."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    break;
+                case 1:
+                    Y = value;
+                    break;
+                case 2:
+                    Z = value;
+                    break;
+                case 3:
+                    W = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 4."
+                    );
+            }
+        }
+    }
+
     public float Length2 => float.Pow(X, 2) + float.Pow(Y, 2) + float.Pow(Z, 2) + float.Pow(W, 2);
     public float Length => float.Sqrt(Length2);
 
@@ -158,100 +199,54 @@ public class Vector4 : IEqualityComparer<Vector4>
         return (X, Y, Z, W);
     }
 
-    public float this[int index]
+    public static Vector4 operator +(Vector4 x, Vector4 y)
     {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                3 => W,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "The index must be between 0 and 4."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                case 3:
-                    W = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "The index must be between 0 and 4."
-                    );
-            }
-        }
+        return new Vector4(x.X + y.X, x.Y + y.Y, x.Z + y.Z, x.W + y.W);
     }
 
-    public static Vector4 operator +(Vector4 left, Vector4 right)
+    public static Vector4 operator -(Vector4 x, Vector4 y)
     {
-        return new Vector4(left.X + right.X, left.Y + right.Y, left.Z + right.Z, left.W + right.W);
+        return new Vector4(x.X - y.X, x.Y - y.Y, x.Z - y.Z, x.W - y.W);
     }
 
-    public static Vector4 operator -(Vector4 left, Vector4 right)
+    public static float operator *(Vector4 x, Vector4 y)
     {
-        return new Vector4(left.X - right.X, left.Y - right.Y, left.Z - right.Z, left.W - right.W);
+        return x.X * y.X + x.Y * y.Y + x.Z * y.Z + x.W * y.W;
     }
 
-    public static float operator *(Vector4 left, Vector4 right)
+    public static Vector4 operator *(Vector4 obj, float scalar)
     {
-        return left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
+        return new Vector4(obj.X * scalar, obj.Y * scalar, obj.Z * scalar, obj.W * scalar);
     }
 
-    public static Vector4 operator *(Vector4 vector, float scalar)
+    public static Vector4 operator *(float scalar, Vector4 obj)
     {
-        return new Vector4(
-            vector.X * scalar,
-            vector.Y * scalar,
-            vector.Z * scalar,
-            vector.W * scalar
-        );
+        return obj * scalar;
     }
 
-    public static Vector4 operator *(float scalar, Vector4 vector)
-    {
-        return vector * scalar;
-    }
-
-    public static Vector4 operator /(Vector4 vector, float scalar)
+    public static Vector4 operator /(Vector4 obj, float scalar)
     {
         var oScalar = 1F / scalar;
-        return vector * oScalar;
+        return obj * oScalar;
     }
 
-    public static Vector4 operator -(Vector4 vector)
+    public static Vector4 operator -(Vector4 obj)
     {
-        return new Vector4(-vector.X, -vector.Y, -vector.Z, -vector.W);
+        return new Vector4(-obj.X, -obj.Y, -obj.Z, -obj.W);
     }
 
-    public static Vector4 operator +(Vector4 vector)
+    public static Vector4 operator +(Vector4 obj)
     {
-        return vector;
+        return obj;
     }
 
-    public static bool operator ==(Vector4 left, Vector4 right)
+    public static bool operator ==(Vector4 x, Vector4 y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Vector4 left, Vector4 right)
+    public static bool operator !=(Vector4 x, Vector4 y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

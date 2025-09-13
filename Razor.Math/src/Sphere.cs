@@ -196,7 +196,7 @@ public class Sphere : IEqualityComparer<Sphere>
 
     public void Transform(Matrix3D matrix)
     {
-        Center = matrix * Center;
+        Center *= matrix;
     }
 
     public override bool Equals(object? obj)
@@ -349,30 +349,30 @@ public class Sphere : IEqualityComparer<Sphere>
         }
     }
 
-    public static Sphere operator +(Sphere left, Sphere right)
+    public static Sphere operator +(Sphere x, Sphere y)
     {
-        return Add(left, right);
+        return Add(x, y);
     }
 
-    public static Sphere operator *(Sphere left, Matrix3D right)
+    public static Sphere operator *(Sphere sphere, Matrix3D matrix)
     {
-        Sphere result = new(left);
-        result.Initialize(right, left.Center, left.Radius);
+        Sphere result = new(sphere);
+        result.Initialize(matrix, sphere.Center, sphere.Radius);
         return result;
     }
 
-    public static Sphere operator *(Matrix3D left, Sphere right)
+    public static Sphere operator *(Matrix3D matrix, Sphere sphere)
     {
-        return Transform(left, right);
+        return Transform(matrix, sphere);
     }
 
-    public static bool operator ==(Sphere left, Sphere right)
+    public static bool operator ==(Sphere x, Sphere y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Sphere left, Sphere right)
+    public static bool operator !=(Sphere x, Sphere y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

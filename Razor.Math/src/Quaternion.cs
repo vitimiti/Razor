@@ -41,6 +41,47 @@ public class Quaternion : IEqualityComparer<Quaternion>
         }
     }
 
+    public float this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                3 => W,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "Index must be between 0 and 3."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    break;
+                case 1:
+                    Y = value;
+                    break;
+                case 2:
+                    Z = value;
+                    break;
+                case 3:
+                    W = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "Index must be between 0 and 3."
+                    );
+            }
+        }
+    }
+
     public Quaternion() { }
 
     public Quaternion(float x, float y, float z, float w)
@@ -599,32 +640,32 @@ public class Quaternion : IEqualityComparer<Quaternion>
         return obj is Quaternion other && Equals(this, other);
     }
 
-    public bool Equals(Quaternion? left, Quaternion? right)
+    public bool Equals(Quaternion? x, Quaternion? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return float.Abs(left.X - right.X) < float.Epsilon
-            && float.Abs(left.Y - right.Y) < float.Epsilon
-            && float.Abs(left.Z - right.Z) < float.Epsilon
-            && float.Abs(left.W - right.W) < float.Epsilon;
+        return float.Abs(x.X - y.X) < float.Epsilon
+            && float.Abs(x.Y - y.Y) < float.Epsilon
+            && float.Abs(x.Z - y.Z) < float.Epsilon
+            && float.Abs(x.W - y.W) < float.Epsilon;
     }
 
     public override int GetHashCode()
@@ -657,114 +698,58 @@ public class Quaternion : IEqualityComparer<Quaternion>
         return (X, Y, Z, W);
     }
 
-    public float this[int index]
+    public static Quaternion operator +(Quaternion x, Quaternion y)
     {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                3 => W,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "Index must be between 0 and 3."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                case 3:
-                    W = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "Index must be between 0 and 3."
-                    );
-            }
-        }
+        return new Quaternion(x.X + y.X, x.Y + y.Y, x.Z + y.Z, x.W + y.W);
     }
 
-    public static Quaternion operator +(Quaternion left, Quaternion right)
+    public static Quaternion operator -(Quaternion x, Quaternion y)
+    {
+        return new Quaternion(x.X - y.X, x.Y - y.Y, x.Z - y.Z, x.W - y.W);
+    }
+
+    public static Quaternion operator *(Quaternion x, Quaternion y)
     {
         return new Quaternion(
-            left.X + right.X,
-            left.Y + right.Y,
-            left.Z + right.Z,
-            left.W + right.W
+            x.W * y.X + y.W * x.X + (x.Y * y.Z - y.Y * x.Z),
+            x.W * y.Y + y.W * x.Y - (x.X * y.Z - y.X * x.Z),
+            x.W * y.Z + y.W * x.Z + (x.X * y.Y - y.X * x.Y),
+            x.W * y.W - (x.X * y.X + x.Y * y.Y + x.Z * y.Z)
         );
     }
 
-    public static Quaternion operator -(Quaternion left, Quaternion right)
+    public static Quaternion operator *(Quaternion obj, float scalar)
     {
-        return new Quaternion(
-            left.X - right.X,
-            left.Y - right.Y,
-            left.Z - right.Z,
-            left.W - right.W
-        );
+        return new Quaternion(obj[0] * scalar, obj[1] * scalar, obj[2] * scalar, obj[3] * scalar);
     }
 
-    public static Quaternion operator *(Quaternion left, Quaternion right)
+    public static Quaternion operator *(float scalar, Quaternion obj)
     {
-        return new Quaternion(
-            left.W * right.X + right.W * left.X + (left.Y * right.Z - right.Y * left.Z),
-            left.W * right.Y + right.W * left.Y - (left.X * right.Z - right.X * left.Z),
-            left.W * right.Z + right.W * left.Z + (left.X * right.Y - right.X * left.Y),
-            left.W * right.W - (left.X * right.X + left.Y * right.Y + left.Z * right.Z)
-        );
+        return obj * scalar;
     }
 
-    public static Quaternion operator *(Quaternion quaternion, float scalar)
+    public static Quaternion operator /(Quaternion x, Quaternion y)
     {
-        return new Quaternion(
-            quaternion[0] * scalar,
-            quaternion[1] * scalar,
-            quaternion[2] * scalar,
-            quaternion[3] * scalar
-        );
+        return x * Inverse(y);
     }
 
-    public static Quaternion operator *(float scalar, Quaternion quaternion)
+    public static Quaternion operator -(Quaternion obj)
     {
-        return quaternion * scalar;
+        return new Quaternion(-obj.X, -obj.Y, -obj.Z, -obj.W);
     }
 
-    public static Quaternion operator /(Quaternion left, Quaternion right)
+    public static Quaternion operator +(Quaternion obj)
     {
-        return left * Inverse(right);
+        return obj;
     }
 
-    public static Quaternion operator -(Quaternion quaternion)
+    public static bool operator ==(Quaternion x, Quaternion y)
     {
-        return new Quaternion(-quaternion.X, -quaternion.Y, -quaternion.Z, -quaternion.W);
+        return x.Equals(y);
     }
 
-    public static Quaternion operator +(Quaternion value)
+    public static bool operator !=(Quaternion x, Quaternion y)
     {
-        return value;
-    }
-
-    public static bool operator ==(Quaternion left, Quaternion right)
-    {
-        return left.Equals(right);
-    }
-
-    public static bool operator !=(Quaternion left, Quaternion right)
-    {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

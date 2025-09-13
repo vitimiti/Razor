@@ -29,6 +29,39 @@ public class Vector2 : IEqualityComparer<Vector2>
 
     public bool IsValid => ExtraMath.IsValid(X) && ExtraMath.IsValid(Y);
 
+    public float this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => X,
+                1 => Y,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "The index must be between 0 and 1."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    break;
+                case 1:
+                    Y = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "The index must be between 0 and 1."
+                    );
+            }
+        }
+    }
+
     public Vector2() { }
 
     public Vector2(float x, float y)
@@ -213,30 +246,29 @@ public class Vector2 : IEqualityComparer<Vector2>
         return obj is Vector2 other && Equals(this, other);
     }
 
-    public bool Equals(Vector2? left, Vector2? right)
+    public bool Equals(Vector2? x, Vector2? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return float.Abs(left.X - right.X) < float.Epsilon
-            && float.Abs(left.Y - right.Y) < float.Epsilon;
+        return float.Abs(x.X - y.X) < float.Epsilon && float.Abs(x.Y - y.Y) < float.Epsilon;
     }
 
     public override int GetHashCode()
@@ -269,87 +301,54 @@ public class Vector2 : IEqualityComparer<Vector2>
         return (X, Y);
     }
 
-    public float this[int index]
+    public static Vector2 operator +(Vector2 x, Vector2 y)
     {
-        get =>
-            index switch
-            {
-                0 => X,
-                1 => Y,
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "The index must be between 0 and 1."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "The index must be between 0 and 1."
-                    );
-            }
-        }
+        return new Vector2(x.X + y.X, x.Y + y.Y);
     }
 
-    public static Vector2 operator +(Vector2 left, Vector2 right)
+    public static Vector2 operator -(Vector2 x, Vector2 y)
     {
-        return new Vector2(left.X + right.X, left.Y + right.Y);
+        return new Vector2(x.X - y.X, x.Y - y.Y);
     }
 
-    public static Vector2 operator -(Vector2 left, Vector2 right)
+    public static float operator *(Vector2 x, Vector2 y)
     {
-        return new Vector2(left.X - right.X, left.Y - right.Y);
+        return x.X * y.X + x.Y * y.Y;
     }
 
-    public static float operator *(Vector2 vector, Vector2 right)
+    public static Vector2 operator *(Vector2 obj, float scalar)
     {
-        return vector.X * right.X + vector.Y * right.Y;
+        return new Vector2(obj[0] * scalar, obj[1] * scalar);
     }
 
-    public static Vector2 operator *(Vector2 vector, float scalar)
+    public static Vector2 operator *(float scalar, Vector2 obj)
     {
-        return new Vector2(vector[0] * scalar, vector[1] * scalar);
+        return obj * scalar;
     }
 
-    public static Vector2 operator *(float scalar, Vector2 vector)
-    {
-        return vector * scalar;
-    }
-
-    public static Vector2 operator /(Vector2 vector, float scalar)
+    public static Vector2 operator /(Vector2 obj, float scalar)
     {
         var oScalar = 1F / scalar;
-        return vector * oScalar;
+        return obj * oScalar;
     }
 
-    public static Vector2 operator -(Vector2 vector)
+    public static Vector2 operator -(Vector2 obj)
     {
-        return new Vector2(-vector.X, -vector.Y);
+        return new Vector2(-obj.X, -obj.Y);
     }
 
-    public static Vector2 operator +(Vector2 vector)
+    public static Vector2 operator +(Vector2 obj)
     {
-        return vector;
+        return obj;
     }
 
-    public static bool operator ==(Vector2 left, Vector2 right)
+    public static bool operator ==(Vector2 x, Vector2 y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Vector2 left, Vector2 right)
+    public static bool operator !=(Vector2 x, Vector2 y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }

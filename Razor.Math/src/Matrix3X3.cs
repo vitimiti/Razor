@@ -127,6 +127,43 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
         }
     }
 
+    public Vector3 this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => Rows[0],
+                1 => Rows[1],
+                2 => Rows[2],
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "Index must be between 0 and 2"
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    Rows[0] = value;
+                    break;
+                case 1:
+                    Rows[1] = value;
+                    break;
+                case 2:
+                    Rows[2] = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "Index must be between 0 and 2"
+                    );
+            }
+        }
+    }
+
     public Matrix3X3()
     {
         Rows = new Vector3[3];
@@ -468,29 +505,29 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
         return obj is Matrix3X3 other && Equals(this, other);
     }
 
-    public bool Equals(Matrix3X3? left, Matrix3X3? right)
+    public bool Equals(Matrix3X3? x, Matrix3X3? y)
     {
-        if (ReferenceEquals(left, right))
+        if (ReferenceEquals(x, y))
         {
             return true;
         }
 
-        if (left is null)
+        if (x is null)
         {
             return false;
         }
 
-        if (right is null)
+        if (y is null)
         {
             return false;
         }
 
-        if (left.GetType() != right.GetType())
+        if (x.GetType() != y.GetType())
         {
             return false;
         }
 
-        return !left.Rows.Where((vec, i) => vec != right.Rows[i]).Any();
+        return !x.Rows.Where((vec, i) => vec != y.Rows[i]).Any();
     }
 
     public override int GetHashCode()
@@ -523,38 +560,17 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
         return (Rows[0], Rows[1], Rows[2]);
     }
 
-    public Vector3 this[int index] =>
-        index switch
-        {
-            0 => Rows[0],
-            1 => Rows[1],
-            2 => Rows[2],
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(index),
-                index,
-                "Index must be between 0 and 2"
-            ),
-        };
-
-    public static Matrix3X3 operator +(Matrix3X3 left, Matrix3X3 right)
+    public static Matrix3X3 operator +(Matrix3X3 x, Matrix3X3 y)
     {
-        return new Matrix3X3(
-            left.Rows[0] + right.Rows[0],
-            left.Rows[1] + right.Rows[1],
-            left.Rows[2] + right.Rows[2]
-        );
+        return new Matrix3X3(x.Rows[0] + y.Rows[0], x.Rows[1] + y.Rows[1], x.Rows[2] + y.Rows[2]);
     }
 
-    public static Matrix3X3 operator -(Matrix3X3 left, Matrix3X3 right)
+    public static Matrix3X3 operator -(Matrix3X3 x, Matrix3X3 y)
     {
-        return new Matrix3X3(
-            left.Rows[0] - right.Rows[0],
-            left.Rows[1] - right.Rows[1],
-            left.Rows[2] - right.Rows[2]
-        );
+        return new Matrix3X3(x.Rows[0] - y.Rows[0], x.Rows[1] - y.Rows[1], x.Rows[2] - y.Rows[2]);
     }
 
-    public static Matrix3X3 operator *(Matrix3X3 left, Matrix3X3 right)
+    public static Matrix3X3 operator *(Matrix3X3 x, Matrix3X3 y)
     {
         return new Matrix3X3(
             new Vector3(DefineRowColumn(0, 0), DefineRowColumn(0, 1), DefineRowColumn(0, 2)),
@@ -564,36 +580,30 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column];
+            return x[row][0] * y[0][column] + x[row][1] * y[1][column] + x[row][2] * y[2][column];
         }
     }
 
-    public static Matrix3X3 operator *(Matrix3X3 value, float scalar)
+    public static Matrix3X3 operator *(Matrix3X3 obj, float scalar)
     {
-        return new Matrix3X3(
-            value.Rows[0] * scalar,
-            value.Rows[1] * scalar,
-            value.Rows[2] * scalar
-        );
+        return new Matrix3X3(obj.Rows[0] * scalar, obj.Rows[1] * scalar, obj.Rows[2] * scalar);
     }
 
-    public static Matrix3X3 operator *(float scalar, Matrix3X3 value)
+    public static Matrix3X3 operator *(float scalar, Matrix3X3 obj)
     {
-        return value * scalar;
+        return obj * scalar;
     }
 
-    public static Vector3 operator *(Matrix3X3 value, Vector3 vector)
+    public static Vector3 operator *(Matrix3X3 matrix, Vector3 vector)
     {
         return new Vector3(
-            value[0][0] * vector[0] + value[0][1] * vector[1] + value[0][2] * vector[2],
-            value[1][0] * vector[0] + value[1][1] * vector[1] + value[1][2] * vector[2],
-            value[2][0] * vector[0] + value[2][1] * vector[1] + value[2][2] * vector[2]
+            matrix[0][0] * vector[0] + matrix[0][1] * vector[1] + matrix[0][2] * vector[2],
+            matrix[1][0] * vector[0] + matrix[1][1] * vector[1] + matrix[1][2] * vector[2],
+            matrix[2][0] * vector[0] + matrix[2][1] * vector[1] + matrix[2][2] * vector[2]
         );
     }
 
-    public static Matrix3X3 operator *(Matrix3D left, Matrix3X3 right)
+    public static Matrix3X3 operator *(Matrix3D matrix3D, Matrix3X3 matrix3X3)
     {
         return new Matrix3X3(
             (DefineRowColumn(0, 0), DefineRowColumn(0, 1), DefineRowColumn(0, 2)),
@@ -603,13 +613,13 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column];
+            return matrix3D[row][0] * matrix3X3[0][column]
+                + matrix3D[row][1] * matrix3X3[1][column]
+                + matrix3D[row][2] * matrix3X3[2][column];
         }
     }
 
-    public static Matrix3X3 operator *(Matrix3X3 left, Matrix3D right)
+    public static Matrix3X3 operator *(Matrix3X3 matrix3X3, Matrix3D matrix3D)
     {
         return new Matrix3X3(
             (DefineRowColumn(0, 0), DefineRowColumn(0, 1), DefineRowColumn(0, 2)),
@@ -619,33 +629,29 @@ public class Matrix3X3 : IEqualityComparer<Matrix3X3>
 
         float DefineRowColumn(int row, int column)
         {
-            return left[row][0] * right[0][column]
-                + left[row][1] * right[1][column]
-                + left[row][2] * right[2][column];
+            return matrix3X3[row][0] * matrix3D[0][column]
+                + matrix3X3[row][1] * matrix3D[1][column]
+                + matrix3X3[row][2] * matrix3D[2][column];
         }
     }
 
-    public static Matrix3X3 operator /(Matrix3X3 value, float scalar)
+    public static Matrix3X3 operator /(Matrix3X3 obj, float scalar)
     {
-        return new Matrix3X3(
-            value.Rows[0] / scalar,
-            value.Rows[1] / scalar,
-            value.Rows[2] / scalar
-        );
+        return new Matrix3X3(obj.Rows[0] / scalar, obj.Rows[1] / scalar, obj.Rows[2] / scalar);
     }
 
-    public static Matrix3X3 operator -(Matrix3X3 value)
+    public static Matrix3X3 operator -(Matrix3X3 obj)
     {
-        return new Matrix3X3(-value.Rows[0], -value.Rows[1], -value.Rows[2]);
+        return new Matrix3X3(-obj.Rows[0], -obj.Rows[1], -obj.Rows[2]);
     }
 
-    public static bool operator ==(Matrix3X3 left, Matrix3X3 right)
+    public static bool operator ==(Matrix3X3 x, Matrix3X3 y)
     {
-        return left.Equals(right);
+        return x.Equals(y);
     }
 
-    public static bool operator !=(Matrix3X3 left, Matrix3X3 right)
+    public static bool operator !=(Matrix3X3 x, Matrix3X3 y)
     {
-        return !left.Equals(right);
+        return !x.Equals(y);
     }
 }
