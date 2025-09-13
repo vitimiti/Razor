@@ -2,12 +2,12 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 
 namespace Razor.FileSystem.SaveFile;
 
-[PublicAPI]
+/// <summary>Provides functionalities for managing serialization contexts, including assigning unique IDs to serializable objects and maintaining a queue of pending objects for serialization.</summary>
 public sealed class SaveContext
 {
     private readonly Dictionary<ISerializableObject, int> _ids = new(
@@ -18,6 +18,9 @@ public sealed class SaveContext
 
     private int _nextId = 1;
 
+    /// <summary>Gets the unique ID for the specified serializable object or assigns a new one if it does not already have an ID.</summary>
+    /// <param name="obj">The serializable object for which to get or assign the ID. If null, returns 0.</param>
+    /// <returns>The unique ID of the specified serializable object, or 0 if the object is null.</returns>
     public int GetOrAssignId(ISerializableObject? obj)
     {
         if (obj is null)
@@ -36,30 +39,24 @@ public sealed class SaveContext
         return id;
     }
 
-    public void WriteRef(BinaryWriter writer, ISerializableObject? obj)
+    /// <summary>Writes the ID reference of the specified serializable object to the binary writer, assigning a new ID if necessary.</summary>
+    /// <param name="writer">The binary writer used to write the ID reference.</param>
+    /// <param name="obj">The serializable object whose ID reference is to be written. Can be null.</param>
+    public void WriteRef([NotNull] BinaryWriter writer, ISerializableObject? obj)
     {
         var id = GetOrAssignId(obj);
         writer.Write(id);
     }
 
-    internal bool TryDequeue(out ISerializableObject? obj)
-    {
-        return _pending.TryDequeue(out obj);
-    }
+    internal bool TryDequeue(out ISerializableObject? obj) => _pending.TryDequeue(out obj);
 
     private sealed class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         where T : class
     {
         public static ReferenceEqualityComparer<T> Default { get; } = new();
 
-        public bool Equals(T? x, T? y)
-        {
-            return ReferenceEquals(x, y);
-        }
+        public bool Equals(T? x, T? y) => ReferenceEquals(x, y);
 
-        public int GetHashCode(T obj)
-        {
-            return RuntimeHelpers.GetHashCode(obj);
-        }
+        public int GetHashCode(T obj) => RuntimeHelpers.GetHashCode(obj);
     }
 }

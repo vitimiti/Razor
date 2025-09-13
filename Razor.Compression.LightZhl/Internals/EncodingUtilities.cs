@@ -8,15 +8,9 @@ internal static class EncodingUtilities
 {
     private const int BufferMask = EncodingGlobals.BufferSize - 1;
 
-    public static int Wrap(int position)
-    {
-        return position & BufferMask;
-    }
+    public static int Wrap(int position) => position & BufferMask;
 
-    public static int Distance(int difference)
-    {
-        return difference & BufferMask;
-    }
+    public static int Distance(int difference) => difference & BufferMask;
 
     public static void ShellSort(Span<EncodingTempHuffStat> source)
     {
@@ -26,7 +20,7 @@ internal static class EncodingUtilities
         {
             for (var i = h; i < length; ++i)
             {
-                var v = source[i];
+                EncodingTempHuffStat v = source[i];
                 var j = i;
                 while (j >= h && v < source[j - h])
                 {

@@ -40,7 +40,7 @@ internal sealed class EncodingSystem(EncodingStat stat, BitWriter bitWriter)
 
         stat.Stat[symbol]++;
 
-        ref var item = ref stat.SymbolTable[symbol];
+        ref EncodingSymbol item = ref stat.SymbolTable[symbol];
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(item.NumberOfBits, 0);
 
         bitWriter.PutBits(item.NumberOfBits, item.Code);
@@ -64,11 +64,11 @@ internal sealed class EncodingSystem(EncodingStat stat, BitWriter bitWriter)
         PutRaw(sourceStart[..rawCount]);
 
         var newMatchOver = matchOver - 38;
-        ref readonly var item = ref EncodingGlobals.MatchOverEncodeTable[newMatchOver >> 5];
+        ref readonly EncodingMatchOverItem item = ref EncodingGlobals.MatchOverEncodeTable[newMatchOver >> 5];
         PutSymbol((ushort)(item.Symbol + 4));
         bitWriter.PutBits(item.NumberOfBits + 4, (uint)((item.Bits << 4) | (newMatchOver & 0x1F)));
 
-        ref readonly var displayItem = ref EncodingGlobals.DisplayEncodeTable[
+        ref readonly EncodingDisplayItem displayItem = ref EncodingGlobals.DisplayEncodeTable[
             display >> (EncodingGlobals.BufferBits - 7)
         ];
 

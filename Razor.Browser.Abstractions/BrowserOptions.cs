@@ -2,10 +2,9 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using JetBrains.Annotations;
-
 namespace Razor.Browser.Abstractions;
 
+/// <summary>Represents configuration options for a web browser instance.</summary>
+/// <remarks>This enumeration supports the use of flags, allowing multiple options to be combined.</remarks>
 [Flags]
-[PublicAPI]
 public enum BrowserOptions : long;

@@ -3,21 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
-[PublicAPI]
+/// <summary>Provides extension methods for the <see cref="BinaryReader"/> class to handle big-endian and null-terminated string data.</summary>
 public static class BinaryReaderExtensions
 {
-    public static ushort ReadUInt16BigEndian(this BinaryReader reader)
+    /// <summary>Reads a 16-bit unsigned integer from the current stream in big-endian format.</summary>
+    /// <param name="reader">The <see cref="BinaryReader"/> instance to read from.</param>
+    /// <returns>The 16-bit unsigned integer read from the stream, in big-endian format.</returns>
+    public static ushort ReadUInt16BigEndian([NotNull] this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(2);
         return BinaryPrimitives.ReadUInt16BigEndian(bytes);
     }
 
-    public static uint ReadUInt24BigEndian(this BinaryReader reader)
+    /// <summary>Reads a 24-bit unsigned integer from the current stream in big-endian format.</summary>
+    /// <param name="reader">The <see cref="BinaryReader"/> instance to read from.</param>
+    /// <returns>The 24-bit unsigned integer read from the stream, in big-endian format.</returns>
+    public static uint ReadUInt24BigEndian([NotNull] this BinaryReader reader)
     {
         var byte1 = reader.ReadByte();
         var byte2 = reader.ReadByte();
@@ -25,15 +31,23 @@ public static class BinaryReaderExtensions
         return (uint)((byte1 << 16) | (byte2 << 8) | byte3);
     }
 
-    public static uint ReadUInt32BigEndian(this BinaryReader reader)
+    /// <summary>Reads a 32-bit unsigned integer from the current stream in big-endian format.</summary>
+    /// <param name="reader">The <see cref="BinaryReader"/> instance to read from.</param>
+    /// <returns>The 32-bit unsigned integer read from the stream, in big-endian format.</returns>
+    public static uint ReadUInt32BigEndian([NotNull] this BinaryReader reader)
     {
         var bytes = reader.ReadBytes(4);
         return BinaryPrimitives.ReadUInt32BigEndian(bytes);
     }
 
+    /// <summary>Reads a null-terminated UTF-8 encoded string from the current stream.</summary>
+    /// <param name="reader">The <see cref="BinaryReader"/> instance to read from.</param>
+    /// <param name="encoding">The <see cref="Encoding"/> to use for decoding the string.</param>
+    /// <param name="maxLen">The maximum length of the string to read, in bytes. Default is 4096.</param>
+    /// <returns>The null-terminated string read from the stream.</returns>
     public static string ReadNullTerminatedUtf8(
-        this BinaryReader reader,
-        Encoding encoding,
+        [NotNull] this BinaryReader reader,
+        [NotNull] Encoding encoding,
         int maxLen = 4096
     )
     {

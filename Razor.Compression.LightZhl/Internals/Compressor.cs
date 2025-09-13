@@ -49,10 +49,7 @@ internal sealed class Compressor : LzBuffer
         return encoder2.Finish();
     }
 
-    private static uint RotateLeft(uint x, int y)
-    {
-        return (x << y) | (x >> (32 - y));
-    }
+    private static uint RotateLeft(uint x, int y) => (x << y) | (x >> (32 - y));
 
     private static void UpdateHash(ref uint hash, byte value)
     {
@@ -67,10 +64,7 @@ internal sealed class Compressor : LzBuffer
         hash = RotateLeft(hash, HashShift);
     }
 
-    private static int HashPosition(uint hash)
-    {
-        return (int)((hash * 0x343FDU + 0x269EC3U) >> (32 - TableBits));
-    }
+    private static int HashPosition(uint hash) => (int)(((hash * 0x343FDU) + 0x269EC3U) >> (32 - TableBits));
 
     private static uint CalculateHash(ReadOnlySpan<byte> source)
     {
@@ -91,7 +85,7 @@ internal sealed class Compressor : LzBuffer
                 return 0;
             case > SkipHash:
             {
-                var source1 = source[1..];
+                ReadOnlySpan<byte> source1 = source[1..];
                 hash = 0;
                 foreach (var b in source1.Slice(length, Match))
                 {
@@ -100,10 +94,12 @@ internal sealed class Compressor : LzBuffer
 
                 return hash;
             }
+            default:
+                break;
         }
 
         UpdateHashEx(ref hash, source);
-        var source2 = source[1..];
+        ReadOnlySpan<byte> source2 = source[1..];
 
         for (var i = 0; i < length; ++i)
         {
@@ -127,13 +123,11 @@ internal sealed class Compressor : LzBuffer
         }
     }
 
-    private static int ComputeMatchLimit(int wrapBufPos, int hashPos, int srcLeft, int rawCount)
-    {
-        return int.Min(
+    private static int ComputeMatchLimit(int wrapBufPos, int hashPos, int srcLeft, int rawCount) =>
+        int.Min(
             int.Min(EncodingUtilities.Distance(wrapBufPos - hashPos), srcLeft - rawCount),
             Min + EncodingSystem.MaxMatchOver
         );
-    }
 
     private static int ComputeForwardOverlapExtension(
         ReadOnlySpan<byte> source,
@@ -143,18 +137,12 @@ internal sealed class Compressor : LzBuffer
         int srcLeft
     )
     {
-        var extraMatchLimit = int.Min(
-            Min + EncodingSystem.MaxMatchOver - matchLen,
-            srcLeft - rawCount - matchLen
-        );
+        var extraMatchLimit = int.Min(Min + EncodingSystem.MaxMatchOver - matchLen, srcLeft - rawCount - matchLen);
 
         var extraMatch = 0;
         for (; extraMatch < extraMatchLimit; ++extraMatch)
         {
-            if (
-                source[sourceIndex + rawCount + extraMatch]
-                != source[sourceIndex + rawCount + extraMatch + matchLen]
-            )
+            if (source[sourceIndex + rawCount + extraMatch] != source[sourceIndex + rawCount + extraMatch + matchLen])
             {
                 break;
             }
@@ -163,15 +151,9 @@ internal sealed class Compressor : LzBuffer
         return extraMatch;
     }
 
-    private bool TryBackwardExtendMatch(
-        ReadOnlySpan<byte> sourceFromIndex,
-        ref BackwardExtendState state
-    )
+    private bool TryBackwardExtendMatch(ReadOnlySpan<byte> sourceFromIndex, ref BackwardExtendState state)
     {
-        var extraMatchLimit = int.Min(
-            Min + EncodingSystem.MaxMatchOver - state.MatchLength,
-            state.RawCount
-        );
+        var extraMatchLimit = int.Min(Min + EncodingSystem.MaxMatchOver - state.MatchLength, state.RawCount);
 
         var distance = EncodingUtilities.Distance(state.BufferPosition - state.PositionOfHash);
         extraMatchLimit = int.Min(
@@ -201,17 +183,12 @@ internal sealed class Compressor : LzBuffer
         state.PositionOfHash -= extraMatch;
         state.MatchLength += extraMatch;
         state.WrapBufferPosition = EncodingUtilities.Wrap(state.BufferPosition);
-        state.Hash = CalculateHash(sourceFromIndex[(state.RawCount)..]);
+        state.Hash = CalculateHash(sourceFromIndex[state.RawCount..]);
 
         return true;
     }
 
-    private static void EmitRaw(
-        EncodingSystem encoder,
-        ReadOnlySpan<byte> source,
-        ref int sourceIndex,
-        int rawCount
-    )
+    private static void EmitRaw(EncodingSystem encoder, ReadOnlySpan<byte> source, ref int sourceIndex, int rawCount)
     {
         encoder.PutRaw(source.Slice(sourceIndex, rawCount));
         sourceIndex += rawCount;
@@ -225,12 +202,7 @@ internal sealed class Compressor : LzBuffer
         in MatchEmitArgs args
     )
     {
-        encoder.PutMatch(
-            source[args.SourceBaseIndex..],
-            args.RawCount,
-            args.MatchLength - Min,
-            args.Distance
-        );
+        encoder.PutMatch(source[args.SourceBaseIndex..], args.RawCount, args.MatchLength - Min, args.Distance);
 
         hash = UpdateTable(
             hash,
@@ -246,12 +218,7 @@ internal sealed class Compressor : LzBuffer
         sourceIndex += args.RawCount + args.MatchLength;
     }
 
-    private bool HandleTailIfShort(
-        int srcLeft,
-        EncodingSystem encoder,
-        ReadOnlySpan<byte> source,
-        ref int sourceIndex
-    )
+    private bool HandleTailIfShort(int srcLeft, EncodingSystem encoder, ReadOnlySpan<byte> source, ref int sourceIndex)
     {
         switch (srcLeft)
         {
@@ -259,6 +226,8 @@ internal sealed class Compressor : LzBuffer
                 return false;
             case <= 0:
                 return true;
+            default:
+                break;
         }
 
         ToBuffer(source.Slice(sourceIndex, srcLeft));
@@ -286,13 +255,7 @@ internal sealed class Compressor : LzBuffer
         var matchLen = NumberMatch(hashPos, source[(args.SourceIndex + rawCount)..], matchLimit);
         if (EncodingUtilities.Wrap(hashPos + matchLen) == wrapBufPos)
         {
-            matchLen += ComputeForwardOverlapExtension(
-                source,
-                args.SourceIndex,
-                rawCount,
-                matchLen,
-                args.SrcLeft
-            );
+            matchLen += ComputeForwardOverlapExtension(source, args.SourceIndex, rawCount, matchLen, args.SrcLeft);
         }
 
         if (matchLen < Min - 1)
@@ -309,7 +272,7 @@ internal sealed class Compressor : LzBuffer
             Hash = hash,
         };
 
-        var extended = TryBackwardExtendMatch(source[(args.SourceIndex)..], ref state);
+        var extended = TryBackwardExtendMatch(source[args.SourceIndex..], ref state);
         if (!extended)
         {
             return matchLen;
@@ -466,12 +429,7 @@ internal sealed class Compressor : LzBuffer
         return true;
     }
 
-    private void AdvanceOneRawByte(
-        ReadOnlySpan<byte> source,
-        int sourceIndex,
-        ref int rawCount,
-        ref uint hash
-    )
+    private void AdvanceOneRawByte(ReadOnlySpan<byte> source, int sourceIndex, ref int rawCount, ref uint hash)
     {
         UpdateHashEx(ref hash, source[(sourceIndex + rawCount)..]);
         ToBuffer(source[sourceIndex + rawCount]);
@@ -520,13 +478,7 @@ internal sealed class Compressor : LzBuffer
                     ref sourceIndex,
                     ref hash,
                     new CurrentMatchArgs(rawCount, matchLen, wrapBufPos, hashPos),
-                    new LazyState(
-                        lazy.Length,
-                        lazy.PositionForHash,
-                        lazy.RawCount,
-                        lazy.BufferPosition,
-                        lazy.Hash
-                    )
+                    new LazyState(lazy.Length, lazy.PositionForHash, lazy.RawCount, lazy.BufferPosition, lazy.Hash)
                 );
 
                 break;
@@ -576,12 +528,7 @@ internal sealed class Compressor : LzBuffer
 
     private readonly record struct MatchLengthArgs(int SourceIndex, int SrcLeft);
 
-    private readonly record struct CurrentMatchArgs(
-        int RawCount,
-        int MatchLen,
-        int WrapBufPos,
-        int HashPos
-    );
+    private readonly record struct CurrentMatchArgs(int RawCount, int MatchLen, int WrapBufPos, int HashPos);
 
     private readonly record struct LazyState(
         int LazyMatchLen,

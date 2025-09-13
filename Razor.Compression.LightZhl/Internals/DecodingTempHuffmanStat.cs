@@ -12,74 +12,36 @@ internal readonly struct DecodingTempHuffmanStat(short i, short n)
     public readonly short I = i;
     private readonly short _n = n;
 
-    public bool Equals(DecodingTempHuffmanStat other)
-    {
-        return I == other.I && _n == other._n;
-    }
+    public bool Equals(DecodingTempHuffmanStat other) => I == other.I && _n == other._n;
 
-    public override bool Equals(object? obj)
-    {
-        return obj is DecodingTempHuffmanStat other && Equals(other);
-    }
+    public override bool Equals(object? obj) => obj is DecodingTempHuffmanStat other && Equals(other);
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(I, _n);
-    }
+    public override int GetHashCode() => HashCode.Combine(I, _n);
 
     public int CompareTo(DecodingTempHuffmanStat other)
     {
         // Descendent by n, then descendent by i
         var compare = other._n - _n;
-        if (compare != 0)
+        return compare != 0 ? compare : other.I - I;
+    }
+
+    public int CompareTo(object? obj) =>
+        obj switch
         {
-            return compare;
-        }
+            null => 1,
+            DecodingTempHuffmanStat other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(DecodingTempHuffmanStat)}"),
+        };
 
-        return other.I - I;
-    }
+    public static bool operator ==(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) == 0;
 
-    public int CompareTo(object? obj)
-    {
-        if (obj is null)
-        {
-            return 1;
-        }
+    public static bool operator !=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) != 0;
 
-        return obj is DecodingTempHuffmanStat other
-            ? CompareTo(other)
-            : throw new ArgumentException(
-                $"Object must be of type {nameof(DecodingTempHuffmanStat)}"
-            );
-    }
+    public static bool operator <(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) < 0;
 
-    public static bool operator ==(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) == 0;
-    }
+    public static bool operator >(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) > 0;
 
-    public static bool operator !=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) != 0;
-    }
+    public static bool operator <=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) <= 0;
 
-    public static bool operator <(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) < 0;
-    }
-
-    public static bool operator >(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) > 0;
-    }
-
-    public static bool operator <=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) <= 0;
-    }
-
-    public static bool operator >=(DecodingTempHuffmanStat left, DecodingTempHuffmanStat right)
-    {
-        return left.CompareTo(right) >= 0;
-    }
+    public static bool operator >=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) >= 0;
 }

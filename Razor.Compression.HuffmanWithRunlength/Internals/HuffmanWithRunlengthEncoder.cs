@@ -42,11 +42,12 @@ internal static class HuffmanWithRunlengthEncoder
             bitPattern >>= 16;
             len -= 16;
         }
+
         segments.Push((bitPattern, len));
 
         while (segments.Count > 0)
         {
-            var (pat, ln) = segments.Pop();
+            (var pat, var ln) = segments.Pop();
 
             context.PackBits += ln;
             context.WorkPattern += (pat & masks[(int)ln]) << (24 - (int)context.PackBits);
@@ -69,7 +70,7 @@ internal static class HuffmanWithRunlengthEncoder
 
         while (stack.Count > 0)
         {
-            var (n, d) = stack.Pop();
+            (var n, var d) = stack.Pop();
             if (n < NumberOfCodes)
             {
                 context.BitsArray[n] = d;
@@ -84,11 +85,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
     }
 
-    private static int BuildFrequencyLists(
-        ref EncodeContext context,
-        Span<uint> listCount,
-        Span<uint> listPointer
-    )
+    private static int BuildFrequencyLists(ref EncodeContext context, Span<uint> listCount, Span<uint> listPointer)
     {
         var i1 = 0;
         listCount[i1++] = 0;
@@ -108,10 +105,7 @@ internal static class HuffmanWithRunlengthEncoder
         return i1;
     }
 
-    private static (NodePair First, NodePair Second) FindTwoSmallest(
-        Span<uint> listCount,
-        int count
-    )
+    private static (NodePair First, NodePair Second) FindTwoSmallest(Span<uint> listCount, int count)
     {
         // Find indices of the two smallest values in listCount[0..count-1]
         var idx1 = -1;
@@ -178,22 +172,20 @@ internal static class HuffmanWithRunlengthEncoder
         var state = new MergeState(listCount, listPointer, ref nodes, ref i1);
         while (i1 > 2)
         {
-            var (first, second) = FindTwoSmallest(listCount, i1);
+            (NodePair first, NodePair second) = FindTwoSmallest(listCount, i1);
             MergeNodes(ref context, ref state, in first, in second);
         }
 
         TreeChase(ref context, nodes - 1, 0);
     }
 
-    private static int ComputeBaseMin(ref EncodeContext context, uint remaining)
-    {
-        return remaining switch
+    private static int ComputeBaseMin(ref EncodeContext context, uint remaining) =>
+        remaining switch
         {
             0 => 0,
             >= RepeatTable => 20,
-            _ => (int)context.BitsArray[context.Clue] + 3 + (int)context.RepeatBits[remaining] * 2,
+            _ => (int)context.BitsArray[context.Clue] + 3 + ((int)context.RepeatBits[remaining] * 2),
         };
-    }
 
     private static int MinRep(ref EncodeContext context, uint remaining, uint r)
     {
@@ -211,7 +203,7 @@ internal static class HuffmanWithRunlengthEncoder
         var lastResult = 0;
         while (stack.Count > 0)
         {
-            var frame = stack.Pop();
+            MinRepFrame frame = stack.Pop();
             if (frame.R == 0)
             {
                 lastResult = ComputeBaseMin(ref context, frame.Remaining);
@@ -265,15 +257,10 @@ internal static class HuffmanWithRunlengthEncoder
                     continue;
 
                 case 2:
-                    // Combine second child with accumulated cost and compare
-                    {
-                        var min1 =
-                            lastResult
-                            + (int)context.BitsArray[context.Clue + frame.R] * (int)frame.Use;
-
-                        lastResult = Math.Min(min1, frame.Min);
-                    }
-
+                    var min1 = lastResult + ((int)context.BitsArray[context.Clue + frame.R] * (int)frame.Use);
+                    lastResult = Math.Min(min1, frame.Min);
+                    break;
+                default:
                     break;
             }
         }
@@ -500,11 +487,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
     }
 
-    private static void ForceClueIfRequested(
-        ref EncodeContext context,
-        uint opt,
-        uint leastCountIndex
-    )
+    private static void ForceClueIfRequested(ref EncodeContext context, uint opt, uint leastCountIndex)
     {
         if ((opt & 32) == 0 || context.Clues != 0)
         {
@@ -553,7 +536,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
 
         context.Clues = context.DClues / 4;
-        context.DClues = context.DClues - context.Clues;
+        context.DClues -= context.Clues;
         context.Clue = context.DClue + context.DClues;
     }
 
@@ -573,15 +556,15 @@ internal static class HuffmanWithRunlengthEncoder
         {
             if (context.Count[256 + i] > threshold)
             {
-                context.Count[context.DClue + (i - 1) * 2] = context.Count[256 + i];
+                context.Count[context.DClue + ((i - 1) * 2)] = context.Count[256 + i];
             }
         }
 
-        for (uint i = 1; i <= (uint)(-context.MinDelta); i++)
+        for (uint i = 1; i <= (uint)-context.MinDelta; i++)
         {
             if (context.Count[512 - i] > threshold)
             {
-                context.Count[context.DClue + (i - 1) * 2 + 1] = context.Count[512 - i];
+                context.Count[context.DClue + ((i - 1) * 2) + 1] = context.Count[512 - i];
             }
         }
 
@@ -643,8 +626,7 @@ internal static class HuffmanWithRunlengthEncoder
             var minRep = MinRep(ref context, i, i1C);
             if (
                 minRep <= context.BitsArray[context.Clue + i]
-                || context.Count[context.Clue + i] * (minRep - context.BitsArray[context.Clue + i])
-                    < (i / 2)
+                || context.Count[context.Clue + i] * (minRep - context.BitsArray[context.Clue + i]) < (i / 2)
             )
             {
                 context.Count[context.Clue + i] = 0;
@@ -667,7 +649,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
 
         // Encodable repeat number cost.
-        return context.BitsArray[context.Clue] + 3 + context.RepeatBits[rep] * 2;
+        return context.BitsArray[context.Clue] + 3 + (context.RepeatBits[rep] * 2);
     }
 
     private static uint GetRepeatIndexOrBig(ref EncodeContext context, uint[] count2, uint rep)
@@ -695,11 +677,7 @@ internal static class HuffmanWithRunlengthEncoder
         return remaining != 0 ? BigNumber : cost;
     }
 
-    private static void DistributeRepeatToClueBuckets(
-        ref EncodeContext context,
-        uint[] count2,
-        uint rep
-    )
+    private static void DistributeRepeatToClueBuckets(ref EncodeContext context, uint[] count2, uint rep)
     {
         var remaining = rep;
         for (var i = context.Clues - 1; i != 0; i--)
@@ -715,12 +693,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
     }
 
-    private static void EvaluateRunAndUpdateCounts(
-        ref EncodeContext context,
-        uint[] count2,
-        uint prev,
-        uint rep
-    )
+    private static void EvaluateRunAndUpdateCounts(ref EncodeContext context, uint[] count2, uint prev, uint rep)
     {
         var numberCode = rep * context.BitsArray[prev];
 
@@ -766,10 +739,10 @@ internal static class HuffmanWithRunlengthEncoder
             return false;
         }
 
-        var diIndex = ((int)cur - (int)prev - 1) * 2 + (int)context.DClue;
+        var diIndex = (((int)cur - (int)prev - 1) * 2) + (int)context.DClue;
         if (cur < prev)
         {
-            diIndex = ((int)prev - (int)cur - 1) * 2 + (int)context.DClue + 1;
+            diIndex = (((int)prev - (int)cur - 1) * 2) + (int)context.DClue + 1;
         }
 
         var diu = (uint)diIndex;
@@ -781,8 +754,7 @@ internal static class HuffmanWithRunlengthEncoder
         var preferDelta =
             count2[cur] < 4
             || context.BitsArray[diu] < context.BitsArray[cur]
-            || context.BitsArray[diu] == context.BitsArray[cur]
-                && context.Count[diu] > context.Count[cur];
+            || (context.BitsArray[diu] == context.BitsArray[cur] && context.Count[diu] > context.Count[cur]);
 
         if (!preferDelta)
         {
@@ -790,9 +762,9 @@ internal static class HuffmanWithRunlengthEncoder
         }
 
         codeIndex = (uint)(
-            ((int)cur - (int)prev) >= 0
-                ? ((int)cur - (int)prev - 1) * 2 + (int)context.DClue
-                : ((int)prev - (int)cur - 1) * 2 + (int)context.DClue + 1
+            (int)cur >= (int)prev
+                ? (((int)cur - (int)prev - 1) * 2) + (int)context.DClue
+                : (2 * ((int)prev - (int)cur - 1)) + (int)context.DClue + 1
         );
 
         return true;
@@ -827,16 +799,7 @@ internal static class HuffmanWithRunlengthEncoder
                 EvaluateRunAndUpdateCounts(ref context, count2, prev, rep);
             }
 
-            if (
-                TrySelectDeltaCodeIndex(
-                    ref context,
-                    count2,
-                    prev,
-                    cur,
-                    threshold,
-                    out var codeIndex
-                )
-            )
+            if (TrySelectDeltaCodeIndex(ref context, count2, prev, cur, threshold, out var codeIndex))
             {
                 context.Count[codeIndex]++;
             }
@@ -849,11 +812,9 @@ internal static class HuffmanWithRunlengthEncoder
         }
     }
 
-    private static (
-        uint LongestIndex,
-        uint SecondLongestIndex,
-        uint LongestLength
-    ) FindTwoLongestCodes(ref EncodeContext context)
+    private static (uint LongestIndex, uint SecondLongestIndex, uint LongestLength) FindTwoLongestCodes(
+        ref EncodeContext context
+    )
     {
         uint longestLen = 0;
         uint i2 = 0; // longest index
@@ -918,7 +879,7 @@ internal static class HuffmanWithRunlengthEncoder
         uint longest = 99;
         while (longest > chainsaw)
         {
-            var (i2, i3Max, maxLen) = FindTwoLongestCodes(ref context);
+            (var i2, var i3Max, var maxLen) = FindTwoLongestCodes(ref context);
             longest = maxLen;
             if (longest <= chainsaw)
             {
@@ -1096,11 +1057,7 @@ internal static class HuffmanWithRunlengthEncoder
         }
     }
 
-    private static bool TryComputeRepeatNumberCost(
-        ref EncodeContext context,
-        uint rep,
-        out uint cost
-    )
+    private static bool TryComputeRepeatNumberCost(ref EncodeContext context, uint rep, out uint cost)
     {
         // Requires a clue symbol to exist and be present.
         if (context.Clues == 0 || context.Count[context.Clue] == 0)
@@ -1116,7 +1073,7 @@ internal static class HuffmanWithRunlengthEncoder
             return true;
         }
 
-        cost = context.BitsArray[context.Clue] + 3 + context.RepeatBits[rep] * 2;
+        cost = context.BitsArray[context.Clue] + 3 + (context.RepeatBits[rep] * 2);
         return true;
     }
 
@@ -1173,7 +1130,7 @@ internal static class HuffmanWithRunlengthEncoder
 
     private static void EncodeRun(ref EncodeContext context, uint prev, uint rep)
     {
-        const uint RlAdjust = 1U;
+        const uint rlAdjust = 1U;
 
         var codeNumber = rep * context.BitsArray[prev];
 
@@ -1195,12 +1152,8 @@ internal static class HuffmanWithRunlengthEncoder
 
         if (repeatNumber < repeatIndex)
         {
-            WriteBits(
-                ref context,
-                context.PatternArray[context.Clue],
-                context.BitsArray[context.Clue]
-            );
-            WriteNumber(ref context, rep - RlAdjust);
+            WriteBits(ref context, context.PatternArray[context.Clue], context.BitsArray[context.Clue]);
+            WriteNumber(ref context, rep - rlAdjust);
             return;
         }
 
@@ -1221,10 +1174,10 @@ internal static class HuffmanWithRunlengthEncoder
             return false;
         }
 
-        var diIndex = ((int)cur - (int)prev - 1) * 2 + (int)context.DClue;
+        var diIndex = (((int)cur - (int)prev - 1) * 2) + (int)context.DClue;
         if (cur < prev)
         {
-            diIndex = ((int)prev - (int)cur - 1) * 2 + (int)context.DClue + 1;
+            diIndex = (((int)prev - (int)cur - 1) * 2) + (int)context.DClue + 1;
         }
 
         var diu = (uint)diIndex;
@@ -1315,10 +1268,10 @@ internal static class HuffmanWithRunlengthEncoder
         context.WorkPattern = 0;
         context.PackedLength = 0;
 
-        const uint Opt = 57U | 49U; // same as the original code
+        const uint opt = 57U | 49U; // same as the original code
 
         // Build model
-        Analysis(ref context, Opt, chainsaw: 15);
+        Analysis(ref context, opt, chainsaw: 15);
 
         // Write standard header (fb6/fb4 family), matching original implementation
         if (uncompressedLength > 0xFFFFFF)
@@ -1359,7 +1312,7 @@ internal static class HuffmanWithRunlengthEncoder
         // Payload
         Pack(ref context);
 
-        return context.OutBytes.ToArray();
+        return [.. context.OutBytes];
     }
 
     private sealed class EncodeContext
@@ -1403,7 +1356,7 @@ internal static class HuffmanWithRunlengthEncoder
         public uint Val { get; } = val;
     }
 
-    private ref struct MergeState
+    private readonly ref struct MergeState
     {
         public readonly Span<uint> ListCount;
         public readonly Span<uint> ListPointer;

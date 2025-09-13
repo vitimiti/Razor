@@ -3,18 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Razor.Extensions;
 
-[PublicAPI]
+/// <summary>Provides extension methods and properties related to text encoding.</summary>
 public static class EncodingExtensions
 {
+    /// <summary>Gets the ANSI encoding (Code Page 1252).</summary>
+    /// <remarks>This property provides a static reference to the ANSI encoding, commonly used for legacy systems or specific text processing scenarios.</remarks>
     public static Encoding Ansi => Encoding.GetEncoding(1252);
 
-    static EncodingExtensions()
-    {
-        // Register the code page provider to get additional encodings.
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-    }
+    // Register the code page provider to get additional encodings.
+    static EncodingExtensions() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 }

@@ -2,16 +2,14 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using JetBrains.Annotations;
 using Razor.Browser.Abstractions;
 
 namespace Razor.Browser.Engine;
 
-[PublicAPI]
+/// <summary>Provides a factory for creating instances of <see cref="IBrowserEngine"/>.</summary>
 public class BrowserEngineFactory(Func<IBrowserEngine> engineFactory) : IBrowserEngineFactory
 {
-    public IBrowserEngine CreateEngine()
-    {
-        return engineFactory();
-    }
+    /// <summary>Creates an instance of <see cref="IBrowserEngine"/> using the configured factory.</summary>
+    /// <returns>An instance of <see cref="IBrowserEngine"/>.</returns>
+    public IBrowserEngine CreateEngine() => engineFactory();
 }

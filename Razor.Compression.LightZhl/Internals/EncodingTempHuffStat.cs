@@ -12,20 +12,11 @@ internal readonly struct EncodingTempHuffStat(short i, short n)
     public short I { get; } = i;
     public short N { get; } = n;
 
-    public bool Equals(EncodingTempHuffStat other)
-    {
-        return I == other.I && N == other.N;
-    }
+    public bool Equals(EncodingTempHuffStat other) => I == other.I && N == other.N;
 
-    public override bool Equals(object? obj)
-    {
-        return obj is EncodingTempHuffStat other && Equals(other);
-    }
+    public override bool Equals(object? obj) => obj is EncodingTempHuffStat other && Equals(other);
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(I, N);
-    }
+    public override int GetHashCode() => HashCode.Combine(I, N);
 
     public int CompareTo(EncodingTempHuffStat other)
     {
@@ -33,45 +24,23 @@ internal readonly struct EncodingTempHuffStat(short i, short n)
         return (cmp != 0) ? cmp : other.I - I;
     }
 
-    public int CompareTo(object? obj)
-    {
-        if (obj is null)
+    public int CompareTo(object? obj) =>
+        obj switch
         {
-            return 1;
-        }
+            null => 1,
+            EncodingTempHuffStat other => CompareTo(other),
+            _ => throw new ArgumentException($"Object must be of type {nameof(EncodingTempHuffStat)}"),
+        };
 
-        return obj is EncodingTempHuffStat other
-            ? CompareTo(other)
-            : throw new ArgumentException($"Object must be of type {nameof(EncodingTempHuffStat)}");
-    }
+    public static bool operator ==(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) == 0;
 
-    public static bool operator ==(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) == 0;
-    }
+    public static bool operator !=(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) != 0;
 
-    public static bool operator !=(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) != 0;
-    }
+    public static bool operator <(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) < 0;
 
-    public static bool operator <(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) < 0;
-    }
+    public static bool operator >(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) > 0;
 
-    public static bool operator >(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) > 0;
-    }
+    public static bool operator <=(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) <= 0;
 
-    public static bool operator <=(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) <= 0;
-    }
-
-    public static bool operator >=(EncodingTempHuffStat left, EncodingTempHuffStat right)
-    {
-        return left.CompareTo(right) >= 0;
-    }
+    public static bool operator >=(EncodingTempHuffStat x, EncodingTempHuffStat y) => x.CompareTo(y) >= 0;
 }

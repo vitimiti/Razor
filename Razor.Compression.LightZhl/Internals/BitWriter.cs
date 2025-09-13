@@ -17,7 +17,7 @@ internal sealed class BitWriter(Span<byte> destination)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(codeBits, 16);
 
-        _bits |= (code << (32 - _bitsCount - codeBits));
+        _bits |= code << (32 - _bitsCount - codeBits);
         _bitsCount += codeBits;
         if (_bitsCount < 16)
         {

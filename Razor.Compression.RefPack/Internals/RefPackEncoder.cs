@@ -38,18 +38,10 @@ internal static class RefPackEncoder
         return (((first << 8) | third) ^ (second << 4)) & 0xFFFF;
     }
 
-    private static int MatchLength(
-        byte[] source,
-        int sourceIndex,
-        int destinationIndex,
-        int maxMatch
-    )
+    private static int MatchLength(byte[] source, int sourceIndex, int destinationIndex, int maxMatch)
     {
         var current = 0;
-        while (
-            current < maxMatch
-            && source[sourceIndex + current] == source[destinationIndex + current]
-        )
+        while (current < maxMatch && source[sourceIndex + current] == source[destinationIndex + current])
         {
             current++;
         }
@@ -96,7 +88,7 @@ internal static class RefPackEncoder
                 continue;
             }
 
-            var tOffset = (cPtr - 1) - tPtr;
+            var tOffset = cPtr - 1 - tPtr;
             var tCost = tOffset switch
             {
                 < 0x400 when tLength <= 10 => 2, // 2-byte int form
@@ -124,13 +116,7 @@ internal static class RefPackEncoder
         return (bOffset, bLength, bCost);
     }
 
-    private static void InsertIntoHashChain(
-        byte[] source,
-        int cPtr,
-        int fromStart,
-        int[] hashTable,
-        int[] link
-    )
+    private static void InsertIntoHashChain(byte[] source, int cPtr, int fromStart, int[] hashTable, int[] link)
     {
         var hash = HashAt(source, cPtr);
         var hashOffset = cPtr - fromStart;
@@ -138,12 +124,7 @@ internal static class RefPackEncoder
         hashTable[hash] = hashOffset;
     }
 
-    private static void EmitPendingLiteralBlocks(
-        BinaryWriter writer,
-        byte[] source,
-        ref int rPtr,
-        ref int literalRun
-    )
+    private static void EmitPendingLiteralBlocks(BinaryWriter writer, byte[] source, ref int rPtr, ref int literalRun)
     {
         while (literalRun > 3)
         {
@@ -174,9 +155,7 @@ internal static class RefPackEncoder
             case 2: // 2-byte int form
             {
                 var first = (byte)(
-                    (((bOffset >> 8) & 0x1F) << 5)
-                    | (((bLength - 3) & 0x07) << 2)
-                    | (literalRun & 0x03)
+                    (((bOffset >> 8) & 0x1F) << 5) | (((bLength - 3) & 0x07) << 2) | (literalRun & 0x03)
                 );
 
                 var second = (byte)(bOffset & 0xFF);
@@ -199,10 +178,7 @@ internal static class RefPackEncoder
             default: // 4-byte very int form
             {
                 var first = (byte)(
-                    0xC0
-                    | (((bOffset >> 16) & 0x01) << 4)
-                    | ((((bLength - 5) >> 8) & 0x03) << 2)
-                    | (literalRun & 0x03)
+                    0xC0 | (((bOffset >> 16) & 0x01) << 4) | ((((bLength - 5) >> 8) & 0x03) << 2) | (literalRun & 0x03)
                 );
 
                 var second = (byte)((bOffset >> 8) & 0xFF);
@@ -267,14 +243,7 @@ internal static class RefPackEncoder
 
         while (length >= 0)
         {
-            var (bOffset, bLength, bCost) = FindBestMatch(
-                buffer,
-                cPtr,
-                offset,
-                length,
-                hashTable,
-                link
-            );
+            (var bOffset, var bLength, var bCost) = FindBestMatch(buffer, cPtr, offset, length, hashTable, link);
 
             if (bCost >= bLength || length < 4)
             {
@@ -288,15 +257,7 @@ internal static class RefPackEncoder
             {
                 EmitPendingLiteralBlocks(writer, buffer, ref rPtr, ref literalRun);
 
-                EmitBestMatchCommand(
-                    writer,
-                    buffer,
-                    bCost,
-                    bOffset,
-                    bLength,
-                    ref rPtr,
-                    ref literalRun
-                );
+                EmitBestMatchCommand(writer, buffer, bCost, bOffset, bLength, ref rPtr, ref literalRun);
 
                 UpdateHashChainsAfterMatch(buffer, ref cPtr, offset, bLength, hashTable, link);
 

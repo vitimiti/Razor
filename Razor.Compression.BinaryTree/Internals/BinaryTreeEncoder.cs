@@ -38,8 +38,8 @@ internal static class BinaryTreeEncoder
             context.Masks[i] = (context.Masks[i - 1] << 1) + 1;
         }
 
-        var buffer1Size = count * 3 / 2 + Slopage;
-        var buffer2Size = count * 3 / 2 + Slopage;
+        var buffer1Size = (count * 3 / 2) + Slopage;
+        var buffer2Size = (count * 3 / 2) + Slopage;
         context.Buffer1 = new byte[buffer1Size];
         context.Buffer2 = new byte[buffer2Size];
 
@@ -47,9 +47,9 @@ internal static class BinaryTreeEncoder
         Buffer.BlockCopy(buffer, offset, context.BufferBase, 0, count);
         context.BufferEndExclusive = count;
 
-        const uint Passes = 256;
-        const uint MultiMax = 32;
-        TreePack(ref context, Passes, MultiMax);
+        const uint passes = 256;
+        const uint multiMax = 32;
+        TreePack(ref context, passes, multiMax);
     }
 
     private static void WriteBits(ref EncodeContext context, uint bitPattern, int length)
@@ -116,9 +116,7 @@ internal static class BinaryTreeEncoder
     )
     {
         var source = context.BufferBase;
-        var destination = ReferenceEquals(source, context.Buffer1)
-            ? context.Buffer2
-            : context.Buffer1;
+        var destination = ReferenceEquals(source, context.Buffer1) ? context.Buffer2 : context.Buffer1;
         var sourceIndex = 0;
         var bend = context.BufferEndExclusive;
         var destinationIndex = 0;
@@ -138,10 +136,7 @@ internal static class BinaryTreeEncoder
             {
                 case 1:
                 {
-                    if (
-                        sourceIndex < bend
-                        && GetAtSourceIndex(sourceIndex) == rightPointer[pointerIndex]
-                    )
+                    if (sourceIndex < bend && GetAtSourceIndex(sourceIndex) == rightPointer[pointerIndex])
                     {
                         destination[destinationIndex - 1] = joinPointer[pointerIndex];
                         sourceIndex++;
@@ -171,24 +166,13 @@ internal static class BinaryTreeEncoder
 
         return;
 
-        byte GetAtSourceIndex(int index)
-        {
-            return index == bend ? (byte)clue : source[index];
-        }
+        byte GetAtSourceIndex(int index) => index == bend ? (byte)clue : source[index];
     }
 
-    private static bool IsCandidate(short count, uint threshold, byte tryQueueEntry)
-    {
-        return count > threshold && tryQueueEntry != 0;
-    }
+    private static bool IsCandidate(short count, uint threshold, byte tryQueueEntry) =>
+        count > threshold && tryQueueEntry != 0;
 
-    private static uint InsertBest(
-        uint[] bestNumber,
-        uint[] bestValue,
-        uint bestSize,
-        int index,
-        uint value
-    )
+    private static uint InsertBest(uint[] bestNumber, uint[] bestValue, uint bestSize, int index, uint value)
     {
         var k = bestSize;
         while (bestValue[k - 1] < value)
@@ -211,7 +195,7 @@ internal static class BinaryTreeEncoder
 
     private static uint TrimBestSize(uint bestSize, uint[] bestValue, int ratio)
     {
-        while (bestValue[bestSize - 1] < (bestValue[1] / (uint)ratio))
+        while (bestValue[bestSize - 1] < bestValue[1] / (uint)ratio)
         {
             bestSize--;
         }
@@ -219,18 +203,10 @@ internal static class BinaryTreeEncoder
         return bestSize;
     }
 
-    private static uint ComputeThreshold(uint bestSize, uint[] bestValue, int ratio)
-    {
-        return bestSize < 0x30 ? bestValue[1] / (uint)ratio : bestValue[bestSize - 1];
-    }
+    private static uint ComputeThreshold(uint bestSize, uint[] bestValue, int ratio) =>
+        bestSize < 0x30 ? bestValue[1] / (uint)ratio : bestValue[bestSize - 1];
 
-    private static uint FindBest(
-        short[] countPointer,
-        byte[] tryQueue,
-        uint[] bestNumber,
-        uint[] bestValue,
-        int ratio
-    )
+    private static uint FindBest(short[] countPointer, byte[] tryQueue, uint[] bestNumber, uint[] bestValue, int ratio)
     {
         var bestSize = 1U;
         var threshold = 3U;
@@ -279,12 +255,7 @@ internal static class BinaryTreeEncoder
         count2[0] = BigNumber;
     }
 
-    private static void InitializeQueues(
-        uint[] count2,
-        byte[] tryQueue,
-        byte[] freeQueue,
-        EncodeContext context
-    )
+    private static void InitializeQueues(uint[] count2, byte[] tryQueue, byte[] freeQueue, EncodeContext context)
     {
         Array.Clear(context.ClueQueue);
         for (var i = 0; i < Codes; i++)
@@ -316,8 +287,7 @@ internal static class BinaryTreeEncoder
                 var secondCount = count2[second];
 
                 // Keep stable order when counts equal
-                var inOrder =
-                    firstCount > secondCount || (firstCount == secondCount && first <= second);
+                var inOrder = firstCount > secondCount || (firstCount == secondCount && first <= second);
                 if (inOrder)
                 {
                     continue;
@@ -330,16 +300,12 @@ internal static class BinaryTreeEncoder
         }
     }
 
-    private static bool IsPairCandidate(TreePackState state, int leftNode, int rightNode)
-    {
-        return state.TryQueue[leftNode] == 1 && state.TryQueue[rightNode] == 1;
-    }
+    private static bool IsPairCandidate(TreePackState state, int leftNode, int rightNode) =>
+        state.TryQueue[leftNode] == 1 && state.TryQueue[rightNode] == 1;
 
     private static void AdvanceToNextFreePointer(TreePackState state)
     {
-        while (
-            state.FreePointer < Codes && state.FreeQueue[state.SortPointer[state.FreePointer]] == 0
-        )
+        while (state.FreePointer < Codes && state.FreeQueue[state.SortPointer[state.FreePointer]] == 0)
         {
             state.FreePointer++;
         }
@@ -436,13 +402,7 @@ internal static class BinaryTreeEncoder
             ClearCount(state.TryQueue, state.Count);
             AdjacentCount(context.BufferBase, 0, context.BufferEndExclusive, state.Count);
 
-            var bestSize = FindBest(
-                state.Count,
-                state.TryQueue,
-                state.BestNumber,
-                state.BestValue,
-                state.Ratio
-            );
+            var bestSize = FindBest(state.Count, state.TryQueue, state.BestNumber, state.BestValue, state.Ratio);
             doMore = 0;
             if (bestSize <= 1)
             {
@@ -536,14 +496,7 @@ internal static class BinaryTreeEncoder
         // Main pass
         RunMainPass(ref context, ref passes, multiMax, ref state, clue);
 
-        WriteHeaderAndTables(
-            ref context,
-            clue,
-            state.BtSize,
-            state.BtNode,
-            state.BtLeft,
-            state.BtRight
-        );
+        WriteHeaderAndTables(ref context, clue, state.BtSize, state.BtNode, state.BtLeft, state.BtRight);
 
         WritePayloadAndFooter(ref context, clue);
     }

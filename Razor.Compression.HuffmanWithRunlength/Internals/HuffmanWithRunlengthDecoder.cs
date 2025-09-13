@@ -8,16 +8,9 @@ internal static class HuffmanWithRunlengthDecoder
 {
     public static long Decode(BinaryReader reader, byte[] buffer, int offset, int count)
     {
-        if (
-            !HuffmanWithRunlengthDecoderUtilities.IsHuffmanWithRunlengthCompressed(
-                reader.BaseStream
-            )
-        )
+        if (!HuffmanWithRunlengthDecoderUtilities.IsHuffmanWithRunlengthCompressed(reader.BaseStream))
         {
-            throw new ArgumentException(
-                "The stream is not a HuffmanWithRunlength stream.",
-                nameof(reader)
-            );
+            throw new ArgumentException("The stream is not a HuffmanWithRunlength stream.", nameof(reader));
         }
 
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -28,9 +21,7 @@ internal static class HuffmanWithRunlengthDecoder
         reader.BaseStream.Position = 0;
         var compressed = reader.ReadBytes((int)reader.BaseStream.Length);
         var decompressed = Decompress(compressed, out var actualUncompressedSize);
-        var expectedSize = HuffmanWithRunlengthDecoderUtilities.GetUncompressedSize(
-            reader.BaseStream
-        );
+        var expectedSize = HuffmanWithRunlengthDecoderUtilities.GetUncompressedSize(reader.BaseStream);
 
         if (
             actualUncompressedSize != expectedSize
@@ -103,7 +94,7 @@ internal static class HuffmanWithRunlengthDecoder
             } while ((int)decoderState.Bits >= 0);
 
             decoderState.Bits <<= 1;
-            decoderState.BitsLeft -= (count - 1);
+            decoderState.BitsLeft -= count - 1;
             _ = GetBits(ref decoderState, 0);
         }
         else
@@ -114,6 +105,7 @@ internal static class HuffmanWithRunlengthDecoder
                 value = GetBits(ref decoderState, 1);
             } while (value == 0);
         }
+
         if (count > 16)
         {
             value = GetBits(ref decoderState, count - 16);
@@ -157,11 +149,7 @@ internal static class HuffmanWithRunlengthDecoder
         return 0;
     }
 
-    private static int ReadHeader(
-        ref DecoderState decoderState,
-        uint headerType,
-        out uint normalizedType
-    )
+    private static int ReadHeader(ref DecoderState decoderState, uint headerType, out uint normalizedType)
     {
         int localLength;
         var typeLocal = headerType;
@@ -188,7 +176,7 @@ internal static class HuffmanWithRunlengthDecoder
                 _ = GetBits(ref decoderState, 16);
             }
 
-            typeLocal &= unchecked((uint)(~0x100));
+            typeLocal &= unchecked((uint)~0x100);
 
             var value = GetBits(ref decoderState, 8);
             localLength = (int)GetBits(ref decoderState, 16);
@@ -242,11 +230,7 @@ internal static class HuffmanWithRunlengthDecoder
         return localClue;
     }
 
-    private static void FillCodeTableFromLeaps(
-        ref DecoderState decoderState,
-        int charsCount,
-        byte[] codeTableLocal
-    )
+    private static void FillCodeTableFromLeaps(ref DecoderState decoderState, int charsCount, byte[] codeTableLocal)
     {
         var leap = new sbyte[256];
         byte nextChar = 0xFF;
@@ -272,17 +256,10 @@ internal static class HuffmanWithRunlengthDecoder
         }
     }
 
-    private static byte LengthForCode(byte code, byte clue, int lengthIfNotClue)
-    {
-        return (byte)(code == clue ? 96 : lengthIfNotClue);
-    }
+    private static byte LengthForCode(byte code, byte clue, int lengthIfNotClue) =>
+        (byte)(code == clue ? 96 : lengthIfNotClue);
 
-    private static void WriteRepeatedEntries(
-        ref QuickTables quickTables,
-        byte code,
-        byte length,
-        int repeat
-    )
+    private static void WriteRepeatedEntries(ref QuickTables quickTables, byte code, byte length, int repeat)
     {
         for (var i = 0; i < repeat; ++i)
         {
@@ -378,12 +355,7 @@ internal static class HuffmanWithRunlengthDecoder
                 continue;
             }
 
-            clueLengthLocal = RecoverClueLength(
-                codeTableLocal,
-                bitNumberTableLocal,
-                mostBitsLocal,
-                localClue
-            );
+            clueLengthLocal = RecoverClueLength(codeTableLocal, bitNumberTableLocal, mostBitsLocal, localClue);
 
             break;
         }
@@ -564,11 +536,7 @@ internal static class HuffmanWithRunlengthDecoder
         return true;
     }
 
-    private static bool TryProcessRunOrEof(
-        ref DecoderState decoderState,
-        byte[] destination,
-        ref int destinationIndex
-    )
+    private static bool TryProcessRunOrEof(ref DecoderState decoderState, byte[] destination, ref int destinationIndex)
     {
         var runLength = (int)GetNumber(ref decoderState);
         if (runLength != 0)
@@ -608,8 +576,8 @@ internal static class HuffmanWithRunlengthDecoder
                 ref decoderState,
                 destination,
                 ref destinationIndex,
-                decodeContext._quickCodeTable,
-                decodeContext._quickLengthTable,
+                decodeContext.QuickCodeTable,
+                decodeContext.QuickLengthTable,
                 out var bitsCountLocal
             );
 
@@ -618,7 +586,7 @@ internal static class HuffmanWithRunlengthDecoder
                     ref decoderState,
                     destination,
                     ref destinationIndex,
-                    decodeContext._quickCodeTable,
+                    decodeContext.QuickCodeTable,
                     ref bitsCountLocal
                 )
             )
@@ -626,23 +594,19 @@ internal static class HuffmanWithRunlengthDecoder
                 continue;
             }
 
-            bitsCountLocal = DetermineBitsCount(
-                ref decoderState,
-                bitsCountLocal,
-                ref decodeContext._huffman
-            );
+            bitsCountLocal = DetermineBitsCount(ref decoderState, bitsCountLocal, ref decodeContext.Huffman);
 
             var code = ReadCode(
                 ref decoderState,
                 bitsCountLocal,
-                decodeContext._deltaTable,
-                decodeContext._huffman.CodeTable
+                decodeContext.DeltaTable,
+                decodeContext.Huffman.CodeTable
             );
             if (
                 TryWriteNonClueOrRefill(
                     ref decoderState,
                     code,
-                    decodeContext._huffman.Clue,
+                    decodeContext.Huffman.Clue,
                     destination,
                     ref destinationIndex
                 )
@@ -669,12 +633,10 @@ internal static class HuffmanWithRunlengthDecoder
             case 0x32FB or 0xB2FB:
             {
                 var i = 0;
-                var j = 0;
-                while (j < length)
+                for (var j = 0; j < length; j++)
                 {
                     i += bufferLocal[j];
                     bufferLocal[j] = (byte)i;
-                    j++;
                 }
 
                 break;
@@ -683,17 +645,17 @@ internal static class HuffmanWithRunlengthDecoder
             {
                 var i = 0;
                 var nextCharInner = 0;
-                var j = 0;
-                while (j < length)
+                for (var j = 0; j < length; j++)
                 {
                     i += bufferLocal[j];
                     nextCharInner += i;
                     bufferLocal[j] = (byte)nextCharInner;
-                    j++;
                 }
 
                 break;
             }
+            default:
+                break;
         }
     }
 
@@ -736,7 +698,7 @@ internal static class HuffmanWithRunlengthDecoder
         var quickLengthTable = new byte[256];
 
         // Build tables
-        var (clue, mostBits, clueLength) = BuildHuffmanTables(
+        (var clue, var mostBits, var clueLength) = BuildHuffmanTables(
             ref state,
             bitNumberTable,
             deltaTable,
@@ -759,10 +721,10 @@ internal static class HuffmanWithRunlengthDecoder
 
         var decodeCtx = new DecodeContext
         {
-            _deltaTable = deltaTable,
-            _quickCodeTable = quickCodeTable,
-            _quickLengthTable = quickLengthTable,
-            _huffman = huffmanCtx,
+            DeltaTable = deltaTable,
+            QuickCodeTable = quickCodeTable,
+            QuickLengthTable = quickLengthTable,
+            Huffman = huffmanCtx,
         };
 
         // Decode stream
@@ -817,9 +779,9 @@ internal static class HuffmanWithRunlengthDecoder
 
     private struct DecodeContext
     {
-        public uint[] _deltaTable;
-        public byte[] _quickCodeTable;
-        public byte[] _quickLengthTable;
-        public HuffmanContext _huffman;
+        public uint[] DeltaTable;
+        public byte[] QuickCodeTable;
+        public byte[] QuickLengthTable;
+        public HuffmanContext Huffman;
     }
 }

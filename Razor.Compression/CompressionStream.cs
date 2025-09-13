@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
-using JetBrains.Annotations;
 using Razor.Compression.BinaryTree;
 using Razor.Compression.HuffmanWithRunlength;
 using Razor.Compression.LightZhl;
@@ -14,7 +13,7 @@ using Razor.Compression.RefPack;
 
 namespace Razor.Compression;
 
-[PublicAPI]
+/// <summary>Provides a stream for compressing or decompressing data.</summary>
 public sealed class CompressionStream : Stream
 {
     private const string NotReadableStreamError = "The stream is not readable.";
@@ -27,16 +26,24 @@ public sealed class CompressionStream : Stream
     private bool _disposed;
     private Stream? _decoder;
 
+    /// <summary>Gets the default compression type used by the system.</summary>
+    /// <value>A <see cref="CompressionType"/> value indicating the preferred compression algorithm. By default, this is set to <see cref="CompressionType.RefPack"/>.</value>
     public static CompressionType PreferredCompressionType => CompressionType.RefPack;
 
-    public override bool CanRead =>
-        !_disposed && _mode is CompressionMode.Decompress && _stream.CanRead;
+    /// <summary>Gets a value indicating whether the stream supports reading.</summary>
+    /// <value><c>true</c> if the stream supports reading and is not disposed, and the compression mode is set to <see cref="CompressionMode.Decompress"/>; otherwise, <c>false</c>.</value>
+    public override bool CanRead => !_disposed && _mode is CompressionMode.Decompress && _stream.CanRead;
 
+    /// <summary>Gets a value indicating whether the stream supports seeking.</summary>
+    /// <value>Always returns <c>false</c> as seeking is not supported by this stream.</value>
     public override bool CanSeek => false;
 
-    public override bool CanWrite =>
-        !_disposed && _mode is CompressionMode.Compress && _stream.CanWrite;
+    /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
+    /// <value><c>true</c> if the stream is in compression mode, not disposed, and the underlying stream supports writing; otherwise, <c>false</c>.</value>
+    public override bool CanWrite => !_disposed && _mode is CompressionMode.Compress && _stream.CanWrite;
 
+    /// <summary>Gets the length of the stream, considering its compression mode.</summary>
+    /// <value>The length of the stream in bytes. When in <see cref="CompressionMode.Compress"/>, this represents the length of the underlying stream. When in <see cref="CompressionMode.Decompress"/>, this may represent the uncompressed size if determinable.</value>
     public override long Length
     {
         get
@@ -63,7 +70,7 @@ public sealed class CompressionStream : Stream
                     return _stream.Length;
                 }
 
-                var comp = MapTagToType(header[..4]);
+                CompressionType comp = MapTagToType(header[..4]);
                 if (comp is CompressionType.None)
                 {
                     return _stream.Length;
@@ -80,12 +87,16 @@ public sealed class CompressionStream : Stream
         }
     }
 
+    /// <summary>Gets or sets the position within the stream.</summary>
+    /// <value>Always throws <see cref="NotSupportedException"/> as seeking is not supported.</value>
     public override long Position
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
     }
 
+    /// <summary>Gets the compression type based on the content of the stream.</summary>
+    /// <value>A <see cref="CompressionType"/> value representing the detected compression algorithm, or <see cref="CompressionType.None"/> if no valid compression type is detected or the stream content is too small to determine the type.</value>
     public CompressionType CompressionType
     {
         get
@@ -109,8 +120,12 @@ public sealed class CompressionStream : Stream
         }
     }
 
+    /// <summary>Indicates whether the stream is compressed.</summary>
+    /// <value><c>true</c> if the stream uses a compression type other than <see cref="CompressionType.None"/>; otherwise, <c>false</c>.</value>
     public bool IsCompressed => CompressionType is not CompressionType.None;
 
+    /// <summary>Gets the size of the data in its uncompressed state.</summary>
+    /// <value>A <see cref="long"/> value representing the uncompressed size of the data. If the stream's length is less than 8 bytes or if the compression type is <see cref="CompressionType.None"/>, this value will match the stream's length.</value>
     public long UncompressedSize
     {
         get
@@ -130,7 +145,7 @@ public sealed class CompressionStream : Stream
                     return _stream.Length;
                 }
 
-                var comp = MapTagToType(header[..4]);
+                CompressionType comp = MapTagToType(header[..4]);
                 return comp is CompressionType.None
                     ? _stream.Length
                     : BinaryPrimitives.ReadUInt32LittleEndian(header.Slice(4, 4));
@@ -142,7 +157,13 @@ public sealed class CompressionStream : Stream
         }
     }
 
-    public CompressionStream(Stream stream, CompressionType type, bool leaveOpen = false)
+    /// <summary>Provides functionality for handling compression and decompression streams using various compression types.</summary>
+    /// <remarks>This class extends <see cref="Stream"/> and supports reading, writing, and flushing operations based on the specified compression mode and type.</remarks>
+    /// <param name="stream">The underlying stream to use for reading and writing.</param>
+    /// <param name="type">The compression type to use for compression and decompression.</param>
+    /// <param name="leaveOpen"><c>true</c> to leave the stream open after the <see cref="CompressionStream"/> object is disposed; otherwise, <c>false</c>.</param>
+    /// <exception cref="ArgumentException">The stream must support seeking.</exception>
+    public CompressionStream([NotNull] Stream stream, CompressionType type, bool leaveOpen = false)
     {
         if (!stream.CanSeek)
         {
@@ -155,7 +176,12 @@ public sealed class CompressionStream : Stream
         _type = type;
     }
 
-    public CompressionStream(Stream stream, bool leaveOpen = false)
+    /// <summary>Provides functionality for compressing and decompressing data streams using various compression types.</summary>
+    /// <remarks>This class extends <see cref="Stream"/> and supports both compression and decompression based on the specified <see cref="CompressionType"/> and <see cref="CompressionMode"/>.</remarks>
+    /// <param name="stream">The underlying stream to perform read or write operations on.</param>
+    /// <param name="leaveOpen"><c>true</c> to leave the underlying stream open after the <see cref="CompressionStream"/> is disposed; otherwise, <c>false</c>.</param>
+    /// <exception cref="ArgumentException">Thrown when the provided stream does not support seeking.</exception>
+    public CompressionStream([NotNull] Stream stream, bool leaveOpen = false)
     {
         if (!stream.CanSeek)
         {
@@ -168,6 +194,8 @@ public sealed class CompressionStream : Stream
         _type = CompressionType.None;
     }
 
+    /// <summary>Releases the resources used by the <see cref="CompressionStream"/>.</summary>
+    /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
     protected override void Dispose(bool disposing)
     {
         if (_disposed)
@@ -186,8 +214,12 @@ public sealed class CompressionStream : Stream
         }
 
         _disposed = true;
+        base.Dispose(disposing);
     }
 
+    /// <summary>Flushes all buffers for the compression stream and ensures that any buffered data is written to the underlying device.</summary>
+    /// <remarks>This method clears any internal buffers and invokes the flush operation on both the decoder and the underlying stream. If the stream is disposed, an exception is thrown.</remarks>
+    /// <exception cref="ObjectDisposedException">Thrown when the stream has already been disposed.</exception>
     public override void Flush()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -195,14 +227,26 @@ public sealed class CompressionStream : Stream
         _stream.Flush();
     }
 
+    /// <summary>Asynchronously clears all buffers for the stream and ensures that any buffered data is written to the underlying device.</summary>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous flush operation.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _decoder?.FlushAsync(cancellationToken);
+        _ = (_decoder?.FlushAsync(cancellationToken));
         return _stream.FlushAsync(cancellationToken);
     }
 
-    public override int Read(byte[] buffer, int offset, int count)
+    /// <summary>Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">An array of bytes. When this method returns, the buffer contains the specified byte array with the values between <paramref name="offset"/> and (<paramref name="offset"/> + <paramref name="count"/> - 1) replaced by the bytes read from the current source.</param>
+    /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin storing the data read from the stream.</param>
+    /// <param name="count">The maximum number of bytes to be read from the current stream.</param>
+    /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero if the end of the stream has been reached.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="count"/> is negative, or <paramref name="offset"/> + <paramref name="count"/> is greater than the buffer length.</exception>
+    /// <exception cref="InvalidOperationException">The stream does not support reading.</exception>
+    public override int Read([NotNull] byte[] buffer, int offset, int count)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -236,8 +280,8 @@ public sealed class CompressionStream : Stream
         }
 
         // Determine compression type by tag
-        var tag = header[..4];
-        var compType = MapTagToType(tag);
+        Span<byte> tag = header[..4];
+        CompressionType compType = MapTagToType(tag);
         if (compType == CompressionType.None)
         {
             // No valid compression tag: treat entire stream as raw data
@@ -251,26 +295,14 @@ public sealed class CompressionStream : Stream
         // Create the appropriate decoder over the remaining payload
         _decoder = compType switch
         {
-            CompressionType.BinaryTree => new BinaryTreeStream(
-                _stream,
-                CompressionMode.Decompress,
-                leaveOpen: true
-            ),
+            CompressionType.BinaryTree => new BinaryTreeStream(_stream, CompressionMode.Decompress, leaveOpen: true),
             CompressionType.HuffmanWithRunlength => new HuffmanWithRunlengthStream(
                 _stream,
                 CompressionMode.Decompress,
                 leaveOpen: true
             ),
-            CompressionType.RefPack => new RefPackStream(
-                _stream,
-                CompressionMode.Decompress,
-                leaveOpen: true
-            ),
-            CompressionType.NoxLzh => new LightZhlStream(
-                _stream,
-                CompressionMode.Decompress,
-                leaveOpen: true
-            ),
+            CompressionType.RefPack => new RefPackStream(_stream, CompressionMode.Decompress, leaveOpen: true),
+            CompressionType.NoxLzh => new LightZhlStream(_stream, CompressionMode.Decompress, leaveOpen: true),
             CompressionType.ZLib1
             or CompressionType.ZLib2
             or CompressionType.ZLib3
@@ -279,10 +311,9 @@ public sealed class CompressionStream : Stream
             or CompressionType.ZLib6
             or CompressionType.ZLib7
             or CompressionType.ZLib8
-            or CompressionType.ZLib9 => new ZLibStream(
-                _stream,
-                CompressionMode.Decompress,
-                leaveOpen: true
+            or CompressionType.ZLib9 => new ZLibStream(_stream, CompressionMode.Decompress, leaveOpen: true),
+            CompressionType.None => throw new NotSupportedException(
+                "Cannot read compressed data from a stream that does not contain a compression tag."
             ),
             _ => throw new InvalidOperationException("Unsupported compression type."),
         };
@@ -291,6 +322,11 @@ public sealed class CompressionStream : Stream
         return _decoder.Read(buffer, offset, count);
     }
 
+    /// <summary>Reads data from the stream into the specified buffer.</summary>
+    /// <param name="buffer">A span of bytes where the read data will be stored.</param>
+    /// <returns>The number of bytes read into the buffer. Returns 0 if the end of the stream is reached.</returns>
+    /// <exception cref="ObjectDisposedException">Thrown when the stream has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the stream is not readable.</exception>
     public override int Read(Span<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -313,8 +349,17 @@ public sealed class CompressionStream : Stream
         }
     }
 
+    /// <summary>Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">The buffer to write the data into.</param>
+    /// <param name="offset">The byte offset in the buffer at which to begin writing data read from the stream.</param>
+    /// <param name="count">The maximum number of bytes to read.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the result of the asynchronous read operation. The result contains the total number of bytes read into the buffer.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="count"/> is negative, or their sum exceeds the buffer length.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not readable.</exception>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
     public override Task<int> ReadAsync(
-        byte[] buffer,
+        [NotNull] byte[] buffer,
         int offset,
         int count,
         CancellationToken cancellationToken
@@ -330,6 +375,12 @@ public sealed class CompressionStream : Stream
             : Task.Run(() => Read(buffer, offset, count), cancellationToken);
     }
 
+    /// <summary>Reads a sequence of bytes from the current stream asynchronously and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">The region of memory to write the data read from the stream.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A value task that represents the asynchronous read operation. The result contains the total number of bytes read into the buffer.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the stream is not readable.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown if the current stream has been disposed.</exception>
     public override ValueTask<int> ReadAsync(
         Memory<byte> buffer,
         CancellationToken cancellationToken = new CancellationToken()
@@ -341,22 +392,33 @@ public sealed class CompressionStream : Stream
             : new ValueTask<int>(Read(buffer.Span));
     }
 
-    public override int ReadByte()
-    {
-        throw new NotSupportedException("Reading a single byte is not supported.");
-    }
+    /// <summary>Attempts to read a single byte from the stream.</summary>
+    /// <returns>The byte read, or -1 if the end of the stream has been reached.</returns>
+    /// <exception cref="NotSupportedException">Reading a single byte is not supported for this stream.</exception>
+    public override int ReadByte() => throw new NotSupportedException("Reading a single byte is not supported.");
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
+    /// <summary>Attempts to set the position within the current stream. Not supported for <see cref="CompressionStream"/>.</summary>
+    /// <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
+    /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
+    /// <returns>This method does not return a value as seeking is not supported and will always throw an exception.</returns>
+    /// <exception cref="NotSupportedException">Thrown in all cases as seeking is not supported by <see cref="CompressionStream"/>.</exception>
+    public override long Seek(long offset, SeekOrigin origin) =>
         throw new NotSupportedException("Seeking is not supported.");
-    }
 
-    public override void SetLength(long value)
-    {
+    /// <summary>Throws a <see cref="NotSupportedException"/> because setting the length is not supported.</summary>
+    /// <param name="value">The desired length of the stream, which is not applicable for this implementation.</param>
+    /// <exception cref="NotSupportedException">Always thrown as this operation is not supported.</exception>
+    public override void SetLength(long value) =>
         throw new NotSupportedException("Setting the length is not supported.");
-    }
 
-    public override void Write(byte[] buffer, int offset, int count)
+    /// <summary>Writes a sequence of bytes to the current compression stream and advances the position within the stream by the number of bytes written.</summary>
+    /// <param name="buffer">An array of bytes to write to the stream.</param>
+    /// <param name="offset">The zero-based byte offset in the buffer at which to begin reading bytes.</param>
+    /// <param name="count">The number of bytes to write to the stream.</param>
+    /// <exception cref="InvalidOperationException">The stream does not support writing, or the write operation failed for the compression type.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The combination of <paramref name="offset"/> and <paramref name="count"/> exceeds the length of <paramref name="buffer"/> or a negative value is provided.</exception>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    public override void Write([NotNull] byte[] buffer, int offset, int count)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -383,13 +445,11 @@ public sealed class CompressionStream : Stream
             or CompressionType.ZLib6
             or CompressionType.ZLib7
             or CompressionType.ZLib8
-            or CompressionType.ZLib9 => CreateZLibHeader(
-                (int)_type - (int)CompressionType.ZLib1 + 1
+            or CompressionType.ZLib9 => CreateZLibHeader((int)_type - (int)CompressionType.ZLib1 + 1),
+            CompressionType.None => throw new NotSupportedException(
+                "Cannot write compressed data to a stream that does not contain a compression tag."
             ),
-            _ => throw new ArgumentOutOfRangeException(
-                $"Unsupported compression type: {_type}",
-                nameof(_type)
-            ),
+            _ => throw new ArgumentOutOfRangeException($"Unsupported compression type: {_type}", nameof(_type)),
         };
 
         // Write header with zero length first (to mirror C++ semantics), then patch length after successful compression
@@ -404,11 +464,7 @@ public sealed class CompressionStream : Stream
         {
             case CompressionType.BinaryTree:
             {
-                using BinaryTreeStream specificStream = new(
-                    _stream,
-                    CompressionMode.Compress,
-                    leaveOpen: true
-                );
+                using BinaryTreeStream specificStream = new(_stream, CompressionMode.Compress, leaveOpen: true);
                 specificStream.Write(buffer, offset, count);
                 break;
             }
@@ -424,21 +480,13 @@ public sealed class CompressionStream : Stream
             }
             case CompressionType.RefPack:
             {
-                using RefPackStream specificStream = new(
-                    _stream,
-                    CompressionMode.Compress,
-                    leaveOpen: true
-                );
+                using RefPackStream specificStream = new(_stream, CompressionMode.Compress, leaveOpen: true);
                 specificStream.Write(buffer, offset, count);
                 break;
             }
             case CompressionType.NoxLzh:
             {
-                using LightZhlStream specificStream = new(
-                    _stream,
-                    CompressionMode.Compress,
-                    leaveOpen: true
-                );
+                using LightZhlStream specificStream = new(_stream, CompressionMode.Compress, leaveOpen: true);
                 specificStream.Write(buffer, offset, count);
                 break;
             }
@@ -457,11 +505,13 @@ public sealed class CompressionStream : Stream
                 specificStream.Write(buffer, offset, count);
                 break;
             }
-            default:
-                throw new ArgumentOutOfRangeException(
-                    $"Unsupported compression type: {_type}",
-                    nameof(_type)
+
+            case CompressionType.None:
+                throw new NotSupportedException(
+                    "Cannot write compressed data to a stream that does not contain a compression tag."
                 );
+            default:
+                throw new ArgumentOutOfRangeException($"Unsupported compression type: {_type}", nameof(_type));
         }
 
         // Patch the uncompressed length in the header (little-endian), preserving current position
@@ -473,6 +523,11 @@ public sealed class CompressionStream : Stream
         _stream.Position = afterPayload;
     }
 
+    /// <summary>Writes a sequence of bytes to the stream using a read-only span.</summary>
+    /// <param name="buffer">The read-only span of bytes to write to the stream.</param>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="NotSupportedException">The stream does not support writing.</exception>
+    /// <exception cref="IOException">An I/O error occurred during the write operation.</exception>
     public override void Write(ReadOnlySpan<byte> buffer)
     {
         // Use an array pool to avoid per-call allocation
@@ -488,12 +543,16 @@ public sealed class CompressionStream : Stream
         }
     }
 
-    public override Task WriteAsync(
-        byte[] buffer,
-        int offset,
-        int count,
-        CancellationToken cancellationToken
-    )
+    /// <summary>Asynchronously writes a sequence of bytes to the current stream and advances the position within the stream by the number of bytes written.</summary>
+    /// <param name="buffer">The buffer containing the data to write to the stream.</param>
+    /// <param name="offset">The zero-based byte offset in the buffer at which to begin copying bytes to the stream.</param>
+    /// <param name="count">The maximum number of bytes to write from the buffer.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous write operation.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="count"/> is negative, or their sum exceeds the buffer length.</exception>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not writable.</exception>
+    public override Task WriteAsync([NotNull] byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -505,21 +564,23 @@ public sealed class CompressionStream : Stream
             : Task.Run(() => Write(buffer, offset, count), cancellationToken);
     }
 
+    /// <summary>Asynchronously writes a sequence of bytes to the current stream.</summary>
+    /// <param name="buffer">The region of memory to write data from.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous write operation.</returns>
     public override ValueTask WriteAsync(
         ReadOnlyMemory<byte> buffer,
         CancellationToken cancellationToken = new CancellationToken()
-    )
-    {
-        return new ValueTask(
-            WriteAsync(buffer.Span.ToArray(), 0, buffer.Length, cancellationToken)
-        );
-    }
+    ) => new(WriteAsync(buffer.Span.ToArray(), 0, buffer.Length, cancellationToken));
 
-    public override void WriteByte(byte value)
-    {
+    /// <summary>Attempts to write a single byte to the stream.</summary>
+    /// <param name="value">The byte to write to the stream.</param>
+    /// <exception cref="NotSupportedException">Writing a single byte is not supported by this stream.</exception>
+    public override void WriteByte(byte value) =>
         throw new NotSupportedException("Writing a single byte is not supported.");
-    }
 
+    /// <summary>Closes the current <see cref="CompressionStream"/> and releases any associated system resources.</summary>
+    /// <remarks>This method overrides <see cref="Stream.Close"/> to ensure proper resource disposal and comply with stream standards.</remarks>
     [SuppressMessage(
         "csharpsquid",
         "S3971:\"GC.SuppressFinalize\" should not be called",

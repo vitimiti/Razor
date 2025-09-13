@@ -8,12 +8,9 @@ internal class LzBuffer
 {
     protected int _bufferPosition;
 
-    protected readonly byte[] Buffer = new byte[EncodingGlobals.BufferSize];
+    protected byte[] Buffer { get; } = new byte[EncodingGlobals.BufferSize];
 
-    protected void ToBuffer(byte value)
-    {
-        Buffer[EncodingUtilities.Wrap(_bufferPosition++)] = value;
-    }
+    protected void ToBuffer(byte value) => Buffer[EncodingUtilities.Wrap(_bufferPosition++)] = value;
 
     protected void ToBuffer(ReadOnlySpan<byte> source)
     {

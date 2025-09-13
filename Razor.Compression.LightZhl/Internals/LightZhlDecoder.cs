@@ -65,12 +65,7 @@ internal sealed class LightZhlDecoder
         _nBits = 0;
     }
 
-    public bool Decode(
-        ReadOnlySpan<byte> source,
-        Span<byte> destination,
-        out int consumed,
-        out int written
-    )
+    public bool Decode(ReadOnlySpan<byte> source, Span<byte> destination, out int consumed, out int written)
     {
         consumed = 0;
         written = 0;
@@ -83,7 +78,7 @@ internal sealed class LightZhlDecoder
 
         while (true)
         {
-            var outcome = ProcessStep(source, destination, ref sourceIndex, ref destinationIndex);
+            DecodingStepOutcome outcome = ProcessStep(source, destination, ref sourceIndex, ref destinationIndex);
             if (outcome == DecodingStepOutcome.Continue)
             {
                 continue;
@@ -118,15 +113,9 @@ internal sealed class LightZhlDecoder
         }
     }
 
-    private static int Wrap(int pos)
-    {
-        return pos & BufferMask;
-    }
+    private static int Wrap(int pos) => pos & BufferMask;
 
-    private void ToBuffer(byte value)
-    {
-        _buf[Wrap(_bufPos++)] = value;
-    }
+    private void ToBuffer(byte value) => _buf[Wrap(_bufPos++)] = value;
 
     private void ToBuffer(ReadOnlySpan<byte> source)
     {
@@ -193,7 +182,7 @@ internal sealed class LightZhlDecoder
             return false;
         }
 
-        ref var group = ref _groupTable[groupValue];
+        ref DecodingGroup group = ref _groupTable[groupValue];
         if (group.NumberOfBits == 0)
         {
             var pos = group.Position;
@@ -222,12 +211,7 @@ internal sealed class LightZhlDecoder
         return true;
     }
 
-    private bool TryDecodeMatchOver(
-        int symbol,
-        ReadOnlySpan<byte> source,
-        ref int sourceIndex,
-        out int matchOver
-    )
+    private bool TryDecodeMatchOver(int symbol, ReadOnlySpan<byte> source, ref int sourceIndex, out int matchOver)
     {
         // 256..263 map to 0..7
         if (symbol < 256 + 8)
@@ -243,7 +227,7 @@ internal sealed class LightZhlDecoder
             return false;
         }
 
-        ref readonly var item = ref MatchOverTable[index];
+        ref readonly DecodingMatchOverItem item = ref MatchOverTable[index];
         var extra = GetBits(source, ref sourceIndex, item.NumberOfExtraBits);
         if (extra < 0)
         {
@@ -255,11 +239,7 @@ internal sealed class LightZhlDecoder
         return true;
     }
 
-    private bool TryReadDisplacement(
-        ReadOnlySpan<byte> source,
-        ref int sourceIndex,
-        out int display
-    )
+    private bool TryReadDisplacement(ReadOnlySpan<byte> source, ref int sourceIndex, out int display)
     {
         display = 0;
 
@@ -269,7 +249,7 @@ internal sealed class LightZhlDecoder
             return false;
         }
 
-        ref readonly var item = ref DisplayPrefixTable[prefix];
+        ref readonly DecodingDisplayPrefixItem item = ref DisplayPrefixTable[prefix];
         var bitsCount = item.NumberOfBits + (BufferBits - 7);
 
         if (bitsCount > 8)
@@ -281,7 +261,7 @@ internal sealed class LightZhlDecoder
                 return false;
             }
 
-            display |= (hi << bitsCount);
+            display |= hi << bitsCount;
         }
 
         var lo = GetBits(source, ref sourceIndex, bitsCount);
@@ -296,12 +276,7 @@ internal sealed class LightZhlDecoder
         return display is >= 0 and < BufferSize;
     }
 
-    private bool TryCopyMatch(
-        Span<byte> destination,
-        ref int destinationIndex,
-        int display,
-        int matchOver
-    )
+    private bool TryCopyMatch(Span<byte> destination, ref int destinationIndex, int display, int matchOver)
     {
         var matchLength = matchOver + Min;
         if (destinationIndex + matchLength > destination.Length)
@@ -319,7 +294,7 @@ internal sealed class LightZhlDecoder
         {
             // Overlapping copy: first copy 'display' bytes from ring buffer, then self-extend
             BufferCopy(destination.Slice(destinationIndex, display), pos, display);
-            var span = destination.Slice(destinationIndex, matchLength);
+            Span<byte> span = destination.Slice(destinationIndex, matchLength);
             for (var i = 0; i < matchLength - display; ++i)
             {
                 span[display + i] = span[i];
@@ -356,7 +331,7 @@ internal sealed class LightZhlDecoder
         {
             for (var i = h; i < count; i++)
             {
-                var value = source[i];
+                DecodingTempHuffmanStat value = source[i];
                 var j = i;
                 while (j >= h && value < source[j - h])
                 {
@@ -426,6 +401,27 @@ internal sealed class LightZhlDecoder
         return ReadNewGroupsLayout(source, ref sourceIndex);
     }
 
+    private DecodingStepOutcome ProcessStepFirstMatch(
+        ReadOnlySpan<byte> source,
+        ref int sourceIndex,
+        Span<byte> destination,
+        ref int destinationIndex,
+        int matchOver
+    ) =>
+        !TryReadDisplacement(source, ref sourceIndex, out var display)
+            ? DecodingStepOutcome.Failed
+            : ProcessStepSecondMatch(destination, ref destinationIndex, display, matchOver);
+
+    private DecodingStepOutcome ProcessStepSecondMatch(
+        Span<byte> destination,
+        ref int destinationIndex,
+        int display,
+        int matchOver
+    ) =>
+        TryCopyMatch(destination, ref destinationIndex, display, matchOver)
+            ? DecodingStepOutcome.Continue
+            : DecodingStepOutcome.Failed;
+
     private DecodingStepOutcome ProcessStep(
         ReadOnlySpan<byte> source,
         Span<byte> destination,
@@ -433,10 +429,7 @@ internal sealed class LightZhlDecoder
         ref int destinationIndex
     )
     {
-        if (
-            !TryReadGroupSymbol(source, ref sourceIndex, out var symbol)
-            || !ValidateSymbolAndUpdateStat(symbol)
-        )
+        if (!TryReadGroupSymbol(source, ref sourceIndex, out var symbol) || !ValidateSymbolAndUpdateStat(symbol))
         {
             return DecodingStepOutcome.Failed;
         }
@@ -461,21 +454,13 @@ internal sealed class LightZhlDecoder
             // End marker
             case SymbolsCount - 1:
                 return DecodingStepOutcome.Finished;
+            default:
+                break;
         }
 
         // Match path
-        if (!TryDecodeMatchOver(symbol, source, ref sourceIndex, out var matchOver))
-        {
-            return DecodingStepOutcome.Failed;
-        }
-
-        if (!TryReadDisplacement(source, ref sourceIndex, out var display))
-        {
-            return DecodingStepOutcome.Failed;
-        }
-
-        return TryCopyMatch(destination, ref destinationIndex, display, matchOver)
-            ? DecodingStepOutcome.Continue
-            : DecodingStepOutcome.Failed;
+        return !TryDecodeMatchOver(symbol, source, ref sourceIndex, out var matchOver)
+            ? DecodingStepOutcome.Failed
+            : ProcessStepFirstMatch(source, ref sourceIndex, destination, ref destinationIndex, matchOver);
     }
 }

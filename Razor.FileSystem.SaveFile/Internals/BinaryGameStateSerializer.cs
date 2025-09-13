@@ -2,6 +2,7 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Razor.Extensions;
 
@@ -12,11 +13,7 @@ internal static class BinaryGameStateSerializer
     private const string Magic = "RZRS";
     private const int Version = 1;
 
-    public static void Save(
-        Stream stream,
-        string saveDisplayName,
-        IEnumerable<ISerializableObject> roots
-    )
+    public static void Save(Stream stream, string saveDisplayName, IEnumerable<ISerializableObject> roots)
     {
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
 
@@ -31,7 +28,7 @@ internal static class BinaryGameStateSerializer
 
         // Assign IDs to all declared roots first, then write root IDs
         var rootIds = new List<int>(rootList.Count);
-        rootIds.AddRange(rootList.Select(r => context.GetOrAssignId(r)));
+        rootIds.AddRange(rootList.Select(context.GetOrAssignId));
 
         // v2: write root count and root IDs
         writer.Write(rootIds.Count);
@@ -41,7 +38,7 @@ internal static class BinaryGameStateSerializer
         }
 
         // Serialize the pending queue of discovered objects
-        while (context.TryDequeue(out var obj) && obj is not null)
+        while (context.TryDequeue(out ISerializableObject? obj) && obj is not null)
         {
             var id = context.GetOrAssignId(obj); // already assigned, just re-get
 
@@ -65,10 +62,7 @@ internal static class BinaryGameStateSerializer
         }
     }
 
-    public static IReadOnlyList<ISerializableObject> Load(
-        Stream stream,
-        out string? saveDisplayName
-    )
+    public static IReadOnlyList<ISerializableObject> Load(Stream stream, out string? saveDisplayName)
     {
         using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
 
@@ -108,12 +102,10 @@ internal static class BinaryGameStateSerializer
             var length = reader.ReadInt32();
             var payload = reader.ReadBytes(length);
 
-            var type = Type.GetType(typeName, throwOnError: true)!;
+            Type type = Type.GetType(typeName, throwOnError: true)!;
             if (Activator.CreateInstance(type) is not ISerializableObject instance)
             {
-                throw new InvalidDataException(
-                    $"Type {typeName} does not implement ISerializableObject."
-                );
+                throw new InvalidDataException($"Type {typeName} does not implement ISerializableObject.");
             }
 
             loadContext.Register(id, instance);
@@ -121,12 +113,12 @@ internal static class BinaryGameStateSerializer
         }
 
         // Now load data for all instances
-        foreach (var entry in objectsInOrder)
+        foreach ((_, ISerializableObject obj, var payload) in objectsInOrder)
         {
-            using var ms = new MemoryStream(entry.payload, writable: false);
+            using var ms = new MemoryStream(payload, writable: false);
             using var r = new BinaryReader(ms, Encoding.UTF8, leaveOpen: true);
-            entry.obj.Read(r, loadContext);
-            loadContext.DeferPostLoad(entry.obj);
+            obj.Read(r, loadContext);
+            loadContext.DeferPostLoad(obj);
         }
 
         // Resolve references
@@ -134,20 +126,21 @@ internal static class BinaryGameStateSerializer
 
         // Resolve all roots
         var roots = new List<ISerializableObject>(rootIds.Count);
-        foreach (var id in rootIds)
-        {
-            var root = loadContext.Resolve<ISerializableObject>(id);
-            if (root is null)
-            {
-                throw new InvalidDataException($"Root object with id {id} not found.");
-            }
-
-            roots.Add(root);
-        }
+        roots.AddRange(
+            rootIds.Select(id =>
+                loadContext.Resolve<ISerializableObject>(id)
+                ?? throw new InvalidDataException($"Root object with id {id} not found.")
+            )
+        );
 
         return roots;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "The method is meant to return false on failure."
+    )]
     public static bool TryReadDisplayName(string path, out string? displayName)
     {
         displayName = null;
@@ -158,7 +151,7 @@ internal static class BinaryGameStateSerializer
 
         try
         {
-            using var fs = File.OpenRead(path);
+            using FileStream fs = File.OpenRead(path);
             using var reader = new BinaryReader(fs, Encoding.UTF8, leaveOpen: true);
 
             var magic = reader.ReadString();

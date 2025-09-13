@@ -10,25 +10,20 @@ internal sealed class EncodingStat
 
     internal short[] Stat { get; } = new short[EncodingGlobals.SymbolCount];
     internal int NextStat { get; set; } = RecalculateLength;
-    internal EncodingSymbol[] SymbolTable { get; } =
-        new EncodingSymbol[EncodingGlobals.SymbolCount];
+    internal EncodingSymbol[] SymbolTable { get; } = new EncodingSymbol[EncodingGlobals.SymbolCount];
 
-    internal EncodingStat()
-    {
-        EncodingGlobals.InitialSymbolTable.CopyTo(SymbolTable, 0);
-    }
+    internal EncodingStat() => EncodingGlobals.InitialSymbolTable.CopyTo(SymbolTable, 0);
 
     internal void CalculateStat(int[] groups)
     {
-        Span<EncodingTempHuffStat> source =
-            stackalloc EncodingTempHuffStat[EncodingGlobals.SymbolCount];
+        Span<EncodingTempHuffStat> source = stackalloc EncodingTempHuffStat[EncodingGlobals.SymbolCount];
 
         var total = BuildAndSortTemp(source);
         NextStat = RecalculateLength;
 
         var pos = CalculateFirst14Groups(source, total, groups);
 
-        var (bestBitsCount, bestBitsCount15) = ComputeBestBitsForLastTwoGroups(source, pos);
+        (var bestBitsCount, var bestBitsCount15) = ComputeBestBitsForLastTwoGroups(source, pos);
         AddGroup(groups, 14, bestBitsCount);
         AddGroup(groups, 15, bestBitsCount15);
 
@@ -111,18 +106,14 @@ internal sealed class EncodingStat
         }
     }
 
-    private static int CalculateFirst14Groups(
-        Span<EncodingTempHuffStat> source,
-        int total,
-        int[] groups
-    )
+    private static int CalculateFirst14Groups(Span<EncodingTempHuffStat> source, int total, int[] groups)
     {
         var pos = 0;
         var totalCount = 0;
         for (var group = 0; group < 14; ++group)
         {
             var avgGroup = (total - totalCount) / (16 - group);
-            var (bitsCount, count, advanced) = ComputeGroupBits(source, pos, avgGroup);
+            (var bitsCount, var count, var advanced) = ComputeGroupBits(source, pos, avgGroup);
             AddGroup(groups, group, bitsCount);
             totalCount += count;
             pos += advanced;
@@ -209,7 +200,7 @@ internal sealed class EncodingStat
                 continue;
             }
 
-            var cost = nnn * numberOfBits + (left - nnn) * numberOfBits15;
+            var cost = (nnn * numberOfBits) + ((left - nnn) * numberOfBits15);
             if (cost < best)
             {
                 best = cost;

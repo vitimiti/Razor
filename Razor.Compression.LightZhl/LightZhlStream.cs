@@ -5,12 +5,15 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
-using JetBrains.Annotations;
 using Razor.Compression.LightZhl.Internals;
 
 namespace Razor.Compression.LightZhl;
 
-[PublicAPI]
+/// <summary>Represents a lightweight stream for handling compression and decompression using the ZHL algorithm.</summary>
+/// <remarks>The LightZhlStream is designed to wrap an underlying stream and provide compression or decompression functionality based on the specified mode. It overrides several members of the <see cref="Stream"/> class, tailored for its specific operational use case. Streaming functionality will vary between read and write modes depending on the <see cref="CompressionMode"/>.</remarks>
+/// <exception cref="NotSupportedException">Thrown when unsupported operations such as seeking or setting stream length are attempted.</exception>
+/// <threadsafety>Instance members of this class are not guaranteed to be thread-safe. Synchronization mechanisms must be implemented externally if used concurrently.</threadsafety>
+/// <inheritdoc />
 public sealed class LightZhlStream : Stream
 {
     private readonly Stream _stream;
@@ -23,30 +26,47 @@ public sealed class LightZhlStream : Stream
     private MemoryStream? _uncompressedBuffer;
     private bool _compressDirty;
 
-    public override bool CanRead =>
-        !_disposed && _mode is CompressionMode.Decompress && _stream.CanRead;
+    /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
+    /// <value>true if the stream supports reading and is in decompression mode, and the underlying stream is readable; otherwise, false.</value>
+    /// <remarks>The property returns false if the stream has been disposed or is not in decompression mode, or the underlying stream is not readable.</remarks>
+    public override bool CanRead => !_disposed && _mode is CompressionMode.Decompress && _stream.CanRead;
 
+    /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
+    /// <value>Always false, as the stream does not support seeking.</value>
+    /// <remarks>The property always returns false, as seeking is not supported by the LightZhlStream.</remarks>
     public override bool CanSeek => false;
 
-    public override bool CanWrite =>
-        !_disposed && _mode is CompressionMode.Compress && _stream.CanWrite;
+    /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
+    /// <value>true if the stream supports writing and is in compression mode, and the underlying stream is writable; otherwise, false.</value>
+    /// <remarks>The property returns false if the stream has been disposed or is not in compression mode, or the underlying stream is not writable.</remarks>
+    public override bool CanWrite => !_disposed && _mode is CompressionMode.Compress && _stream.CanWrite;
+
+    /// <summary>Gets the length of the stream.</summary>
+    /// <exception cref="NotSupportedException">Always throws because this stream does not support retrieving the length.</exception>
+    /// <remarks>The <see cref="Length"/> property is not supported for <see cref="LightZhlStream"/> and will always throw a <see cref="NotSupportedException"/>.</remarks>
     public override long Length =>
         throw new NotSupportedException("Getting length is not supported for LightZhlStream.");
 
+    /// <summary>Gets or sets the position within the current stream.</summary>
+    /// <value>The position within the stream.</value>
+    /// <remarks>The property is not supported by LightZhlStream and will always throw a NotSupportedException when attempting to get or set its value.</remarks>
     public override long Position
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
     }
 
-    public LightZhlStream(Stream stream, CompressionMode mode, bool leaveOpen = false)
+    /// <summary>A sealed class that represents a stream for compression and decompression using the LightZhl compression mechanism.</summary>
+    /// <param name="stream">The stream to wrap.</param>
+    /// <param name="mode">The compression mode to use.</param>
+    /// <param name="leaveOpen">Indicates whether the underlying stream should be left open after the stream is disposed.</param>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
+    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="LightZhlStream"/> to be able to read or write data.</remarks>
+    public LightZhlStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
     {
         if (mode is CompressionMode.Compress && !stream.CanSeek)
         {
-            throw new ArgumentException(
-                "The stream must support seeking when used for compression.",
-                nameof(stream)
-            );
+            throw new ArgumentException("The stream must support seeking when used for compression.", nameof(stream));
         }
 
         _stream = stream;
@@ -62,6 +82,9 @@ public sealed class LightZhlStream : Stream
         _compressDirty = false;
     }
 
+    /// <summary>Releases the resources used by the <see cref="LightZhlStream"/>.</summary>
+    /// <param name="disposing">Indicates whether the method is being called from a direct call to <see cref="Dispose"/> (true) or from a finalizer (false).</param>
+    /// <remarks>If <paramref name="disposing"/> is true, this method releases all managed and unmanaged resources. If false, only unmanaged resources are released.</remarks>
     protected override void Dispose(bool disposing)
     {
         if (_disposed)
@@ -74,14 +97,7 @@ public sealed class LightZhlStream : Stream
             // If we are in compression mode, finalize the compressed payload on dispose.
             if (_mode == CompressionMode.Compress)
             {
-                try
-                {
-                    FlushCompressedPayload();
-                }
-                catch
-                {
-                    // Swallow exceptions on dispose to match Stream behavior.
-                }
+                FlushCompressedPayload();
                 _uncompressedBuffer?.Dispose();
                 _uncompressedBuffer = null;
             }
@@ -96,11 +112,9 @@ public sealed class LightZhlStream : Stream
         base.Dispose(disposing);
     }
 
-    ~LightZhlStream()
-    {
-        Dispose(disposing: false);
-    }
-
+    /// <summary>Flushes the underlying stream and writes any buffered compressed data to the wrapped stream.</summary>
+    /// <exception cref="InvalidOperationException">Thrown if the stream is not writable.</exception>
+    /// <remarks>Invoking this method ensures all buffered data is processed and written to the underlying stream. The underlying stream's flush method is also called.</remarks>
     public override void Flush()
     {
         if (!CanWrite)
@@ -112,24 +126,32 @@ public sealed class LightZhlStream : Stream
         _stream.Flush();
     }
 
-    public override Task FlushAsync(CancellationToken cancellationToken)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromCanceled(cancellationToken);
-        }
+    /// <summary>Asynchronously flushes the stream and clears all buffers.</summary>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous flush operation.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <remarks>This method ensures that any buffered data is written to the underlying storage while respecting the cancellation token.</remarks>
+    public override Task FlushAsync(CancellationToken cancellationToken) =>
+        cancellationToken.IsCancellationRequested
+            ? Task.FromCanceled(cancellationToken)
+            : Task.Run(
+                () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Flush();
+                },
+                cancellationToken
+            );
 
-        return Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                Flush();
-            },
-            cancellationToken
-        );
-    }
-
-    public override int Read(byte[] buffer, int offset, int count)
+    /// <summary>Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">The buffer into which the data is read.</param>
+    /// <param name="offset">The zero-based byte offset in the buffer at which to begin storing the data read from the stream.</param>
+    /// <param name="count">The maximum number of bytes to read from the stream.</param>
+    /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero if the end of the stream has been reached.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Either <paramref name="offset"/> or <paramref name="count"/> is negative, or the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the <paramref name="buffer.Length"/>.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not in a readable state.</exception>
+    public override int Read([NotNull] byte[] buffer, int offset, int count)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -161,6 +183,12 @@ public sealed class LightZhlStream : Stream
         return toCopy;
     }
 
+    /// <summary>Reads data from the stream into the provided span buffer.</summary>
+    /// <param name="buffer">The span buffer to fill with data read from the stream.</param>
+    /// <returns>The total number of bytes read into the buffer. This might be less than the requested number of bytes if not enough data is available.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not open for reading or the compression mode does not support reading.</exception>
+    /// <exception cref="IOException">An I/O error occurred, such as the stream being closed or unavailable.</exception>
     public override int Read(Span<byte> buffer)
     {
         var arr = ArrayPool<byte>.Shared.Rent(buffer.Length);
@@ -176,8 +204,17 @@ public sealed class LightZhlStream : Stream
         }
     }
 
+    /// <summary>Asynchronously reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">The buffer to write the data into.</param>
+    /// <param name="offset">The byte offset in the buffer at which to begin writing data.</param>
+    /// <param name="count">The maximum number of bytes to read.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous read operation. The value of the task result contains the total number of bytes read into the buffer. The result can be less than the number of bytes requested if the data is not currently available, or zero if the end of the stream has been reached.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="count"/> is negative, or the sum of <paramref name="offset"/> and <paramref name="count"/> is greater than the buffer's length.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not readable.</exception>
     public override Task<int> ReadAsync(
-        byte[] buffer,
+        [NotNull] byte[] buffer,
         int offset,
         int count,
         CancellationToken cancellationToken
@@ -188,25 +225,25 @@ public sealed class LightZhlStream : Stream
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromCanceled<int>(cancellationToken);
-        }
-
-        return Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return Read(buffer, offset, count);
-            },
-            cancellationToken
-        );
+        return cancellationToken.IsCancellationRequested
+            ? Task.FromCanceled<int>(cancellationToken)
+            : Task.Run(
+                () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Read(buffer, offset, count);
+                },
+                cancellationToken
+            );
     }
 
-    public override ValueTask<int> ReadAsync(
-        Memory<byte> buffer,
-        CancellationToken cancellationToken = default
-    )
+    /// <summary>Reads a sequence of bytes from the current stream asynchronously and advances the position within the stream by the number of bytes read.</summary>
+    /// <param name="buffer">The region of memory to write the data read from the stream.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous read operation. The value of the task contains the total number of bytes read into the buffer.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -227,7 +264,14 @@ public sealed class LightZhlStream : Stream
         return new ValueTask<int>(task);
     }
 
-    public override void Write(byte[] buffer, int offset, int count)
+    /// <summary>Writes a sequence of bytes to the current stream and advances the stream position.</summary>
+    /// <param name="buffer">The buffer holding the data to be written.</param>
+    /// <param name="offset">The zero-based byte offset in the buffer from which to begin copying bytes to the stream.</param>
+    /// <param name="count">The number of bytes to write from the buffer to the stream.</param>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="count"/> is less than zero, or their sum is greater than the length of <paramref name="buffer"/>.</exception>
+    /// <exception cref="InvalidOperationException">The stream does not support writing.</exception>
+    public override void Write([NotNull] byte[] buffer, int offset, int count)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -244,16 +288,16 @@ public sealed class LightZhlStream : Stream
             return;
         }
 
-        if (_uncompressedBuffer is null)
-        {
-            // Should not happen, but guard anyway.
-            _uncompressedBuffer = new MemoryStream();
-        }
-
+        _uncompressedBuffer ??= new MemoryStream();
         _uncompressedBuffer.Write(buffer, offset, count);
         _compressDirty = true;
     }
 
+    /// <summary>Writes a span of bytes to the uncompressed buffer of the <see cref="LightZhlStream"/>.</summary>
+    /// <param name="buffer">A read-only span of bytes to write into the stream.</param>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="InvalidOperationException">The stream is not writable.</exception>
+    /// <remarks>If the <paramref name="buffer"/> length is zero, no action is performed.</remarks>
     public override void Write(ReadOnlySpan<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -273,37 +317,42 @@ public sealed class LightZhlStream : Stream
         _compressDirty = true;
     }
 
-    public override Task WriteAsync(
-        byte[] buffer,
-        int offset,
-        int count,
-        CancellationToken cancellationToken
-    )
+    /// <summary>Writes a sequence of bytes to the LightZhlStream asynchronously using the specified buffer, offset, and count.</summary>
+    /// <param name="buffer">The buffer containing data to be written to the stream.</param>
+    /// <param name="offset">The zero-based byte offset in the buffer at which to begin copying bytes to the stream.</param>
+    /// <param name="count">The number of bytes to write from the buffer to the stream.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous write operation.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The <paramref name="offset"/> or <paramref name="count"/> is negative, or their sum exceeds the length of the buffer.</exception>
+    /// <exception cref="OperationCanceledException">The operation is canceled via the <paramref name="cancellationToken"/>.</exception>
+    public override Task WriteAsync([NotNull] byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(offset + count, buffer.Length);
 
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromCanceled(cancellationToken);
-        }
-
-        return Task.Run(
-            () =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                Write(buffer, offset, count);
-            },
-            cancellationToken
-        );
+        return cancellationToken.IsCancellationRequested
+            ? Task.FromCanceled(cancellationToken)
+            : Task.Run(
+                () =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Write(buffer, offset, count);
+                },
+                cancellationToken
+            );
     }
 
-    public override ValueTask WriteAsync(
-        ReadOnlyMemory<byte> buffer,
-        CancellationToken cancellationToken = default
-    )
+    /// <summary>Asynchronously writes a sequence of bytes to the current stream and advances the position within the stream by the number of bytes written.</summary>
+    /// <param name="buffer">The region of memory to write data from.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A value task that represents the asynchronous write operation.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <remarks>The method writes the contents of the provided memory buffer to the stream. If the stream has been disposed or the operation is canceled, exceptions are thrown.</remarks>
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -324,6 +373,10 @@ public sealed class LightZhlStream : Stream
         return new ValueTask(task);
     }
 
+    /// <summary>Reads and returns the next byte from the stream, or -1 if no more bytes are available.</summary>
+    /// <returns>The next byte cast to an <see cref="int"/>, or -1 if the end of the stream is reached.</returns>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="NotSupportedException">The stream does not support reading.</exception>
     public override int ReadByte()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -334,15 +387,16 @@ public sealed class LightZhlStream : Stream
         }
 
         EnsureDecompressedLoaded();
-
-        if (_decompressedBuffer is null || _decompressedPosition >= _decompressedBuffer.Length)
-        {
-            return -1;
-        }
-
-        return _decompressedBuffer[_decompressedPosition++];
+        return _decompressedBuffer is null || _decompressedPosition >= _decompressedBuffer.Length
+            ? -1
+            : _decompressedBuffer[_decompressedPosition++];
     }
 
+    /// <summary>Writes a single byte to the current stream at the current position.</summary>
+    /// <param name="value">The byte value to write to the stream.</param>
+    /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+    /// <exception cref="NotSupportedException">The current stream does not support writing.</exception>
+    /// <remarks>This method writes the byte into an internal buffer, marking it as dirty for compression.</remarks>
     public override void WriteByte(byte value)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -357,16 +411,22 @@ public sealed class LightZhlStream : Stream
         _compressDirty = true;
     }
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
+    /// <summary>Attempts to set the position within the stream, but seeking is not supported by LightZhlStream.</summary>
+    /// <param name="offset">The point relative to <paramref name="origin"/> to which to seek.</param>
+    /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point for the offset.</param>
+    /// <returns>This method does not return a value as it always throws an exception.</returns>
+    /// <exception cref="NotSupportedException">Seeking is not supported for LightZhlStream.</exception>
+    public override long Seek(long offset, SeekOrigin origin) =>
         throw new NotSupportedException("Seeking is not supported.");
-    }
 
-    public override void SetLength(long value)
-    {
+    /// <summary>Overrides the method to throw a <see cref="NotSupportedException"/>, as setting the length is not supported for <see cref="LightZhlStream"/>.</summary>
+    /// <param name="value">The length to set for the stream.</param>
+    /// <exception cref="NotSupportedException">Always thrown to indicate that setting the length is not supported.</exception>
+    public override void SetLength(long value) =>
         throw new NotSupportedException("Setting the length is not supported.");
-    }
 
+    /// <summary>Closes the current LightZhlStream and releases the resources associated with it.</summary>
+    /// <remarks>This method disposes of the stream and suppresses finalization to optimize resource cleanup. It overrides <see cref="Stream.Close"/>.</remarks>
     [SuppressMessage(
         "csharpsquid",
         "S3971:\"GC.SuppressFinalize\" should not be called",
@@ -406,7 +466,7 @@ public sealed class LightZhlStream : Stream
         // Decode into a dynamically sized buffer.
         if (compressed.Length == 0)
         {
-            _decompressedBuffer = Array.Empty<byte>();
+            _decompressedBuffer = [];
             _decompressedPosition = 0;
             return;
         }
@@ -445,6 +505,7 @@ public sealed class LightZhlStream : Stream
                         "Failed to decode LightZhl stream: output size appears to be unbounded or data is invalid."
                     );
                 }
+
                 capacity = next;
             }
         }
