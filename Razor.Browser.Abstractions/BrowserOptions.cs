@@ -8,4 +8,4 @@ namespace Razor.Browser.Abstractions;
 
 [Flags]
 [PublicAPI]
-public enum BrowserOptions : long { }
+public enum BrowserOptions : long;
