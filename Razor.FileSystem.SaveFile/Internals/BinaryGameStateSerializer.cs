@@ -5,7 +5,7 @@
 using System.Text;
 using Razor.Extensions;
 
-namespace Razor.FileSystem.SaveFile;
+namespace Razor.FileSystem.SaveFile.Internals;
 
 internal static class BinaryGameStateSerializer
 {

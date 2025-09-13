@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using JetBrains.Annotations;
+using Razor.Compression.RefPack.Internals;
 using Razor.Extensions;
 
 namespace Razor.Compression.RefPack;

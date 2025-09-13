@@ -4,7 +4,7 @@
 
 using Razor.Extensions;
 
-namespace Razor.Compression.BinaryTree;
+namespace Razor.Compression.BinaryTree.Internals;
 
 internal static class BinaryTreeDecoder
 {

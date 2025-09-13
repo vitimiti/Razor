@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
+using Razor.FileSystem.SaveFile.Internals;
 
 namespace Razor.FileSystem.SaveFile;
 

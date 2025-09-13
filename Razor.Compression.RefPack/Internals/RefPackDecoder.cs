@@ -4,7 +4,7 @@
 
 using Razor.Extensions;
 
-namespace Razor.Compression.RefPack;
+namespace Razor.Compression.RefPack.Internals;
 
 internal static class RefPackDecoder
 {

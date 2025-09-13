@@ -27,7 +27,7 @@ insert_final_newline = false
 # Organize usings
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
-file_header_template = unset
+file_header_template = "Licensed to the Razor contributors under one or more agreements.\nThe Razor project licenses this file to you under the MIT license.\nSee the LICENSE file in the project root for more information."
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:silent

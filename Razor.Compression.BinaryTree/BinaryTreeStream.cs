@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using JetBrains.Annotations;
+using Razor.Compression.BinaryTree.Internals;
 using Razor.Extensions;
 
 namespace Razor.Compression.BinaryTree;

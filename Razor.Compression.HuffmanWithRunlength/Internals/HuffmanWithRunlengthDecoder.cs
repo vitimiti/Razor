@@ -2,7 +2,7 @@
 // The Razor project licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Razor.Compression.HuffmanWithRunlength;
+namespace Razor.Compression.HuffmanWithRunlength.Internals;
 
 internal static class HuffmanWithRunlengthDecoder
 {
