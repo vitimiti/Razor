@@ -123,43 +123,6 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         }
     }
 
-    public Vector4 this[int index]
-    {
-        get =>
-            index switch
-            {
-                0 => Rows[0],
-                1 => Rows[1],
-                2 => Rows[2],
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    "Index must be between 0 and 2."
-                ),
-            };
-        set
-        {
-            switch (index)
-            {
-                case 0:
-                    Rows[0] = value;
-                    break;
-                case 1:
-                    Rows[1] = value;
-                    break;
-                case 2:
-                    Rows[2] = value;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(index),
-                        index,
-                        "Index must be between 0 and 2."
-                    );
-            }
-        }
-    }
-
     public Matrix3D()
     {
         Rows = new Vector4[3];
@@ -301,7 +264,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
     public static bool SolveLinearSystem(ref Matrix3D system)
     {
         // Essentially system[0][0] == 0F
-        if (float.Abs(system[0][0]) < float.Epsilon)
+        if (system[0][0] < float.Epsilon)
         {
             return false;
         }
@@ -311,7 +274,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         system[2] -= system[2][0] * system[0];
 
         // Essentially system[1][1] == 0F
-        if (float.Abs(system[1][1]) < float.Epsilon)
+        if (system[1][1] < float.Epsilon)
         {
             return false;
         }
@@ -320,7 +283,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         system[2] -= system[2][1] * system[1];
 
         // Essentially system[2][2] == 0F
-        if (float.Abs(system[2][2]) < float.Epsilon)
+        if (system[2][2] < float.Epsilon)
         {
             return false;
         }
@@ -644,7 +607,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinPosition;
         float cosPosition;
         // Essentially len1 != 0F
-        if (float.Abs(len1) > float.Epsilon)
+        if (len1 is < float.Epsilon or > float.Epsilon)
         {
             sinPosition = dz / len1;
             cosPosition = len2 / len1;
@@ -658,7 +621,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (float.Abs(len2) > float.Epsilon)
+        if (len2 is < float.Epsilon or > float.Epsilon)
         {
             sinYaw = dy / len2;
             cosYaw = dx / len2;
@@ -702,7 +665,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinPosition;
         float cosPosition;
         // Essentially len1 != 0F
-        if (float.Abs(len1) > float.Epsilon)
+        if (len1 is < float.Epsilon or > float.Epsilon)
         {
             sinPosition = dz / len1;
             cosPosition = len2 / len1;
@@ -716,7 +679,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (float.Abs(len2) > float.Epsilon)
+        if (len2 is < float.Epsilon or > float.Epsilon)
         {
             sinYaw = dy / len2;
             cosYaw = dx / len2;
@@ -996,7 +959,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         float sinYaw;
         float cosYaw;
         // Essentially len2 != 0F
-        if (float.Abs(len2) > float.Epsilon)
+        if (len2 is < float.Epsilon or > float.Epsilon)
         {
             sinYaw = direction.Y / len2;
             cosYaw = direction.X / len2;
@@ -1092,7 +1055,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         y = Vector3.CrossProduct(z, x);
 
         var len = x.Length;
-        if (float.Abs(len) < float.Epsilon)
+        if (len < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -1100,7 +1063,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
 
         x *= 1F / len;
         len = y.Length;
-        if (float.Abs(len) < float.Epsilon)
+        if (len < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -1108,7 +1071,7 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
 
         y *= 1F / len;
         len = z.Length;
-        if (float.Abs(len) < float.Epsilon)
+        if (len < float.Epsilon)
         {
             MakeIdentity();
             return;
@@ -1134,30 +1097,29 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         return obj is Matrix3D other && Equals(this, other);
     }
 
-    public bool Equals(Matrix3D? x, Matrix3D? y)
+    public bool Equals(Matrix3D? left, Matrix3D? right)
     {
-        if (ReferenceEquals(x, y))
+        if (ReferenceEquals(left, right))
         {
             return true;
         }
 
-        if (x is null)
+        if (left is null)
         {
             return false;
         }
 
-        if (y is null)
+        if (right is null)
         {
             return false;
         }
 
-        // ReSharper disable once ConvertIfStatementToReturnStatement
-        if (x.GetType() != y.GetType())
+        if (left.GetType() != right.GetType())
         {
             return false;
         }
 
-        return Enumerable.Range(0, x.Rows.Length).All(i => x[i] == y[i]);
+        return Enumerable.Range(0, left.Rows.Length).All(i => left[i] == right[i]);
     }
 
     public override int GetHashCode()
@@ -1195,37 +1157,74 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         return row.X * tmp1 + row.Y * tmp2 + row.Z * tmp3;
     }
 
-    public static Matrix3D operator *(Matrix3D x, Matrix3D y)
+    public Vector4 this[int index]
+    {
+        get =>
+            index switch
+            {
+                0 => Rows[0],
+                1 => Rows[1],
+                2 => Rows[2],
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "Index must be between 0 and 2."
+                ),
+            };
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    Rows[0] = value;
+                    break;
+                case 1:
+                    Rows[1] = value;
+                    break;
+                case 2:
+                    Rows[2] = value;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(index),
+                        index,
+                        "Index must be between 0 and 2."
+                    );
+            }
+        }
+    }
+
+    public static Matrix3D operator *(Matrix3D left, Matrix3D right)
     {
         Matrix3D result = new();
 
-        var tmp1 = y[0][0];
-        var tmp2 = y[1][0];
-        var tmp3 = y[2][0];
-        result[0][0] = x[0][0] * tmp1 + x[0][1] * tmp2 + x[0][2] * tmp3;
-        result[1][0] = x[1][0] * tmp1 + x[1][1] * tmp2 + x[1][2] * tmp3;
-        result[2][0] = x[2][0] * tmp1 + x[2][1] * tmp2 + x[2][2] * tmp3;
+        var tmp1 = right[0][0];
+        var tmp2 = right[1][0];
+        var tmp3 = right[2][0];
+        result[0][0] = left[0][0] * tmp1 + left[0][1] * tmp2 + left[0][2] * tmp3;
+        result[1][0] = left[1][0] * tmp1 + left[1][1] * tmp2 + left[1][2] * tmp3;
+        result[2][0] = left[2][0] * tmp1 + left[2][1] * tmp2 + left[2][2] * tmp3;
 
-        tmp1 = y[0][1];
-        tmp2 = y[1][1];
-        tmp3 = y[2][1];
-        result[0][1] = x[0][0] * tmp1 + x[0][1] * tmp2 + x[0][2] * tmp3;
-        result[1][1] = x[1][0] * tmp1 + x[1][1] * tmp2 + x[1][2] * tmp3;
-        result[2][1] = x[2][0] * tmp1 + x[2][1] * tmp2 + x[2][2] * tmp3;
+        tmp1 = right[0][1];
+        tmp2 = right[1][1];
+        tmp3 = right[2][1];
+        result[0][1] = left[0][0] * tmp1 + left[0][1] * tmp2 + left[0][2] * tmp3;
+        result[1][1] = left[1][0] * tmp1 + left[1][1] * tmp2 + left[1][2] * tmp3;
+        result[2][1] = left[2][0] * tmp1 + left[2][1] * tmp2 + left[2][2] * tmp3;
 
-        tmp1 = y[0][2];
-        tmp2 = y[1][2];
-        tmp3 = y[2][2];
-        result[0][2] = x[0][0] * tmp1 + x[0][1] * tmp2 + x[0][2] * tmp3;
-        result[1][2] = x[1][0] * tmp1 + x[1][1] * tmp2 + x[1][2] * tmp3;
-        result[2][2] = x[2][0] * tmp1 + x[2][1] * tmp2 + x[2][2] * tmp3;
+        tmp1 = right[0][2];
+        tmp2 = right[1][2];
+        tmp3 = right[2][2];
+        result[0][2] = left[0][0] * tmp1 + left[0][1] * tmp2 + left[0][2] * tmp3;
+        result[1][2] = left[1][0] * tmp1 + left[1][1] * tmp2 + left[1][2] * tmp3;
+        result[2][2] = left[2][0] * tmp1 + left[2][1] * tmp2 + left[2][2] * tmp3;
 
-        tmp1 = y[0][3];
-        tmp2 = y[1][3];
-        tmp3 = y[2][3];
-        result[0][3] = x[0][0] * tmp1 + x[0][1] * tmp2 + x[0][2] * tmp3 + x[0][3];
-        result[1][3] = x[1][0] * tmp1 + x[1][1] * tmp2 + x[1][2] * tmp3 + x[1][3];
-        result[2][3] = x[2][0] * tmp1 + x[2][1] * tmp2 + x[2][2] * tmp3 + x[2][3];
+        tmp1 = right[0][3];
+        tmp2 = right[1][3];
+        tmp3 = right[2][3];
+        result[0][3] = left[0][0] * tmp1 + left[0][1] * tmp2 + left[0][2] * tmp3 + left[0][3];
+        result[1][3] = left[1][0] * tmp1 + left[1][1] * tmp2 + left[1][2] * tmp3 + left[1][3];
+        result[2][3] = left[2][0] * tmp1 + left[2][1] * tmp2 + left[2][2] * tmp3 + left[2][3];
 
         return result;
     }
@@ -1258,13 +1257,13 @@ public class Matrix3D : IEqualityComparer<Matrix3D>
         "S3875:operator==\" should not be overloaded on reference types",
         Justification = "This is a mathematical class that can be equated, but cannot have addition or substraction."
     )]
-    public static bool operator ==(Matrix3D x, Matrix3D y)
+    public static bool operator ==(Matrix3D left, Matrix3D right)
     {
-        return x.Equals(y);
+        return left.Equals(right);
     }
 
-    public static bool operator !=(Matrix3D x, Matrix3D y)
+    public static bool operator !=(Matrix3D left, Matrix3D right)
     {
-        return !x.Equals(y);
+        return !left.Equals(right);
     }
 }
