@@ -1,6 +1,10 @@
-﻿// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+﻿// -----------------------------------------------------------------------
+// <copyright file="BinaryTreeDecoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using Razor.Extensions;
 
@@ -12,10 +16,7 @@ internal static class BinaryTreeDecoder
     {
         if (!BinaryTreeDecoderUtilities.IsBinaryTreeCompressed(reader.BaseStream))
         {
-            throw new ArgumentException(
-                "The stream is not BinaryTree compressed data.",
-                nameof(reader)
-            );
+            throw new ArgumentException("The stream is not BinaryTree compressed data.", nameof(reader));
         }
 
         ArgumentOutOfRangeException.ThrowIfNegative(offset);
@@ -56,17 +57,7 @@ internal static class BinaryTreeDecoder
                 continue;
             }
 
-            if (
-                TryAndProcessNegativeClue(
-                    currentClue,
-                    node,
-                    buffer,
-                    ref offset,
-                    clueTable,
-                    leftNodes,
-                    rightNodes
-                )
-            )
+            if (TryAndProcessNegativeClue(currentClue, node, buffer, ref offset, clueTable, leftNodes, rightNodes))
             {
                 continue;
             }
@@ -112,12 +103,7 @@ internal static class BinaryTreeDecoder
         }
     }
 
-    private static bool TryAndProcessZeroClue(
-        sbyte currentClue,
-        byte node,
-        byte[] buffer,
-        ref int offset
-    )
+    private static bool TryAndProcessZeroClue(sbyte currentClue, byte node, byte[] buffer, ref int offset)
     {
         if (currentClue != 0)
         {

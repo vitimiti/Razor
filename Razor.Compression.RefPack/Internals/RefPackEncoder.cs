@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="RefPackEncoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using Razor.Extensions;
 
@@ -164,6 +168,7 @@ internal static class RefPackEncoder
                 writer.Write(second);
                 break;
             }
+
             case 3: // 3-byte int form
             {
                 var first = (byte)(0x80 + (bLength - 4));
@@ -175,6 +180,7 @@ internal static class RefPackEncoder
                 writer.Write(third);
                 break;
             }
+
             default: // 4-byte very int form
             {
                 var first = (byte)(

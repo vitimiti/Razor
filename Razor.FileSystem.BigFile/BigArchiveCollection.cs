@@ -1,6 +1,10 @@
-﻿// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+﻿// -----------------------------------------------------------------------
+// <copyright file="BigArchiveCollection.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Collections;
 using System.Collections.Immutable;
@@ -20,6 +24,8 @@ public sealed class BigArchiveCollection
     );
 
     private bool _disposed;
+
+    private BigArchiveCollection() { }
 
     /// <summary>Gets a read-only dictionary containing entries in the big archive collection, where the keys represent normalized paths to entries and the values are tuples containing the associated archive stream and the specific entry details.</summary>
     /// <value>A dictionary where each key is a case-insensitive string representing the normalized path to an archive entry, and each value is a tuple consisting of a <see cref="BigArchiveStream"/> representing the archive and a <see cref="BigArchiveEntry"/> representing the entry's details (such as size and offset).</value>
@@ -74,28 +80,6 @@ public sealed class BigArchiveCollection
             ObjectDisposedException.ThrowIf(_disposed, this);
             return _index[key.PathNormalized()];
         }
-    }
-
-    private BigArchiveCollection() { }
-
-    /// <summary>Releases all resources used by the BigArchiveCollection, including its opened archive streams and internal indexes.</summary>
-    /// <remarks>Ensures all opened archives are properly disposed and clears all internal collections. Once disposed, accessing any members of the object may throw an ObjectDisposedException.</remarks>
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        // Dispose all opened archives.
-        foreach (BigArchiveStream archive in _archives)
-        {
-            archive.Dispose();
-        }
-
-        _archives.Clear();
-        _index.Clear();
-        _disposed = true;
     }
 
     /// <summary>Creates a new instance of <see cref="BigArchiveCollection"/> by opening and indexing the specified archive paths in the provided order.</summary>
@@ -230,5 +214,28 @@ public sealed class BigArchiveCollection
         return _index.GetEnumerator();
     }
 
+    /// <summary>Releases all resources used by the BigArchiveCollection, including its opened archive streams and internal indexes.</summary>
+    /// <remarks>Ensures all opened archives are properly disposed and clears all internal collections. Once disposed, accessing any members of the object may throw an ObjectDisposedException.</remarks>
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        // Dispose all opened archives.
+        foreach (BigArchiveStream archive in _archives)
+        {
+            archive.Dispose();
+        }
+
+        _archives.Clear();
+        _index.Clear();
+        _disposed = true;
+    }
+
+    /// <summary>Returns an enumerator that iterates through the collection of big archive entries.</summary>
+    /// <remarks>Throws ObjectDisposedException if the collection has been disposed.</remarks>
+    /// <returns>An enumerator for the collection of key-value pairs representing archive entries.</returns>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

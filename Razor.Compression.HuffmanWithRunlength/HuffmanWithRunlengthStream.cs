@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="HuffmanWithRunlengthStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
@@ -20,6 +24,24 @@ public sealed class HuffmanWithRunlengthStream : Stream
     private readonly bool _leaveOpen;
 
     private bool _disposed;
+
+    /// <summary>Initializes a new instance of the <see cref="HuffmanWithRunlengthStream"/> class.Represents a stream for handling data compression and decompression using a combination of Huffman coding and run-length encoding. Provides functionality for reading and writing compressed data.</summary>
+    /// <param name="stream">The stream to wrap.</param>
+    /// <param name="mode">The compression mode to use.</param>
+    /// <param name="leaveOpen">Indicates whether the underlying stream should be left open after the stream is disposed.</param>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
+    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="HuffmanWithRunlengthStream"/> to be able to read or write data.</remarks>
+    public HuffmanWithRunlengthStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
+    }
 
     /// <summary>Gets a value indicating whether the stream supports reading operations.</summary>
     /// <value>Returns <c>true</c> if the stream supports reading, is not disposed, and the compression mode is set to decompression; otherwise, <c>false</c>.</value>
@@ -60,43 +82,6 @@ public sealed class HuffmanWithRunlengthStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
-    }
-
-    /// <summary>Represents a stream for handling data compression and decompression using a combination of Huffman coding and run-length encoding. Provides functionality for reading and writing compressed data.</summary>
-    /// <param name="stream">The stream to wrap.</param>
-    /// <param name="mode">The compression mode to use.</param>
-    /// <param name="leaveOpen">Indicates whether the underlying stream should be left open after the stream is disposed.</param>
-    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
-    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="HuffmanWithRunlengthStream"/> to be able to read or write data.</remarks>
-    public HuffmanWithRunlengthStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-    }
-
-    /// <summary>Releases the resources used by the <see cref="HuffmanWithRunlengthStream"/>.</summary>
-    /// <param name="disposing">Indicates whether the method was called from the Dispose method (<c>true</c>) or from a finalizer (<c>false</c>).</param>
-    /// <remarks>If <paramref name="disposing"/> is <c>true</c>, this method releases all managed and unmanaged resources. If <paramref name="disposing"/> is <c>false</c>, only unmanaged resources are released.</remarks>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing && !_leaveOpen)
-        {
-            _stream.Dispose();
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
     }
 
     /// <summary>Flushes data from the stream to the underlying storage and clears any internal buffers, ensuring all written data is persisted.</summary>
@@ -208,10 +193,7 @@ public sealed class HuffmanWithRunlengthStream : Stream
     /// <returns>A value task representing the asynchronous read operation. The result contains the total number of bytes read into the buffer.</returns>
     /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public override ValueTask<int> ReadAsync(
-        Memory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -337,10 +319,7 @@ public sealed class HuffmanWithRunlengthStream : Stream
     /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
     /// <exception cref="NotSupportedException">The stream does not support writing.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public override ValueTask WriteAsync(
-        ReadOnlyMemory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -388,5 +367,24 @@ public sealed class HuffmanWithRunlengthStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the resources used by the <see cref="HuffmanWithRunlengthStream"/>.</summary>
+    /// <param name="disposing">Indicates whether the method was called from the Dispose method (<c>true</c>) or from a finalizer (<c>false</c>).</param>
+    /// <remarks>If <paramref name="disposing"/> is <c>true</c>, this method releases all managed and unmanaged resources. If <paramref name="disposing"/> is <c>false</c>, only unmanaged resources are released.</remarks>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing && !_leaveOpen)
+        {
+            _stream.Dispose();
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
     }
 }

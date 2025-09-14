@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="BinaryTreeStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +25,24 @@ public sealed class BinaryTreeStream : Stream
     private byte[]? _decodedBuffer;
     private int _decodedLength;
     private int _readPosition;
+
+    /// <summary>Initializes a new instance of the <see cref="BinaryTreeStream"/> class.</summary>
+    /// <param name="stream">The stream to wrap.</param>
+    /// <param name="mode">The compression mode to use.</param>
+    /// <param name="leaveOpen">Indicates whether to leave the stream open after disposing.</param>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
+    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="BinaryTreeStream"/> to be able to read or write data.</remarks>
+    public BinaryTreeStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
+    }
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value><c>true</c> if the stream supports reading; otherwise, <c>false</c>.</value>
@@ -59,50 +81,6 @@ public sealed class BinaryTreeStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
-    }
-
-    /// <summary>Initializes a new instance of the <see cref="BinaryTreeStream"/> class.</summary>
-    /// <param name="stream">The stream to wrap.</param>
-    /// <param name="mode">The compression mode to use.</param>
-    /// <param name="leaveOpen">Indicates whether to leave the stream open after disposing.</param>
-    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
-    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="BinaryTreeStream"/> to be able to read or write data.</remarks>
-    public BinaryTreeStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-    }
-
-    /// <summary>Releases the resources used by the <see cref="BinaryTreeStream"/>.</summary>
-    /// <param name="disposing">Indicates whether to release both managed and unmanaged resources (true) or only unmanaged resources (false).</param>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing && !_leaveOpen)
-        {
-            _stream.Dispose();
-        }
-
-        if (_decodedBuffer is not null)
-        {
-            ArrayPool<byte>.Shared.Return(_decodedBuffer);
-            _decodedBuffer = null;
-            _decodedLength = 0;
-            _readPosition = 0;
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
     }
 
     /// <summary>Flushes the underlying stream, ensuring that all buffered data is written to the target stream, if applicable.</summary>
@@ -233,10 +211,7 @@ public sealed class BinaryTreeStream : Stream
     /// <returns>A value task that represents the asynchronous read operation. The result contains the total number of bytes read into the buffer.</returns>
     /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-    public override ValueTask<int> ReadAsync(
-        Memory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -383,10 +358,7 @@ public sealed class BinaryTreeStream : Stream
     /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation is canceled.</exception>
     /// <remarks>This method writes data from the provided buffer into the stream. Cancellation tokens are supported to cancel the operation if required.</remarks>
-    public override ValueTask WriteAsync(
-        ReadOnlyMemory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -434,6 +406,32 @@ public sealed class BinaryTreeStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the resources used by the <see cref="BinaryTreeStream"/>.</summary>
+    /// <param name="disposing">Indicates whether to release both managed and unmanaged resources (true) or only unmanaged resources (false).</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing && !_leaveOpen)
+        {
+            _stream.Dispose();
+        }
+
+        if (_decodedBuffer is not null)
+        {
+            ArrayPool<byte>.Shared.Return(_decodedBuffer);
+            _decodedBuffer = null;
+            _decodedLength = 0;
+            _readPosition = 0;
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
     }
 
     private void EnsureDecoded()

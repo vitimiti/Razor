@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="LightZhlDecoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
@@ -20,6 +24,14 @@ internal sealed class LightZhlDecoder
     private int _bufPos;
     private uint _bits;
     private int _nBits;
+
+    public LightZhlDecoder()
+    {
+        InitializeDefaultTables();
+        _bufPos = 0;
+        _bits = 0;
+        _nBits = 0;
+    }
 
     // csharpier-ignore
     private static short[] InitialSymbolTable =>
@@ -57,14 +69,6 @@ internal sealed class LightZhlDecoder
         new(0, 0), new(0, 1), new(1, 2), new(2, 4), new(3, 8), new(4, 16), new(5, 32), new(6, 64),
     ];
 
-    public LightZhlDecoder()
-    {
-        InitializeDefaultTables();
-        _bufPos = 0;
-        _bits = 0;
-        _nBits = 0;
-    }
-
     public bool Decode(ReadOnlySpan<byte> source, Span<byte> destination, out int consumed, out int written)
     {
         consumed = 0;
@@ -98,6 +102,31 @@ internal sealed class LightZhlDecoder
         return true;
     }
 
+    private static int Wrap(int pos) => pos & BufferMask;
+
+    private static void ShellSort(Span<DecodingTempHuffmanStat> source)
+    {
+        // Matches the hardcoded gap sequence from the original code
+        // h = 40, 13, 4, 1 over a 1-based array in C++; adapt for 0-based here
+        var count = source.Length;
+        int[] gaps = [40, 13, 4, 1];
+        foreach (var h in gaps)
+        {
+            for (var i = h; i < count; i++)
+            {
+                DecodingTempHuffmanStat value = source[i];
+                var j = i;
+                while (j >= h && value < source[j - h])
+                {
+                    source[j] = source[j - h];
+                    j -= h;
+                }
+
+                source[j] = value;
+            }
+        }
+    }
+
     private void InitializeDefaultTables()
     {
         // Initial symbol table
@@ -112,8 +141,6 @@ internal sealed class LightZhlDecoder
             _groupTable[i] = InitialGroups[i];
         }
     }
-
-    private static int Wrap(int pos) => pos & BufferMask;
 
     private void ToBuffer(byte value) => _buf[Wrap(_bufPos++)] = value;
 
@@ -321,29 +348,6 @@ internal sealed class LightZhlDecoder
         return true;
     }
 
-    private static void ShellSort(Span<DecodingTempHuffmanStat> source)
-    {
-        // Matches the hardcoded gap sequence from the original code
-        // h = 40, 13, 4, 1 over a 1-based array in C++; adapt for 0-based here
-        var count = source.Length;
-        int[] gaps = [40, 13, 4, 1];
-        foreach (var h in gaps)
-        {
-            for (var i = h; i < count; i++)
-            {
-                DecodingTempHuffmanStat value = source[i];
-                var j = i;
-                while (j >= h && value < source[j - h])
-                {
-                    source[j] = source[j - h];
-                    j -= h;
-                }
-
-                source[j] = value;
-            }
-        }
-    }
-
     private void RecalculateSymbolsSorted()
     {
         // Build temp array with (index, statValue)
@@ -446,11 +450,13 @@ internal sealed class LightZhlDecoder
                 ToBuffer(b);
                 return DecodingStepOutcome.Continue;
             }
+
             // Recalc stats and groups
             case SymbolsCount - 2:
                 return RecalculateAndReadGroups(source, ref sourceIndex)
                     ? DecodingStepOutcome.Continue
                     : DecodingStepOutcome.Failed;
+
             // End marker
             case SymbolsCount - 1:
                 return DecodingStepOutcome.Finished;

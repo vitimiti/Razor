@@ -1,20 +1,24 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="LzBuffer.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
 internal class LzBuffer
 {
-    protected int _bufferPosition;
+    protected int BufferPosition { get; set; }
 
     protected byte[] Buffer { get; } = new byte[EncodingGlobals.BufferSize];
 
-    protected void ToBuffer(byte value) => Buffer[EncodingUtilities.Wrap(_bufferPosition++)] = value;
+    protected void ToBuffer(byte value) => Buffer[EncodingUtilities.Wrap(BufferPosition++)] = value;
 
     protected void ToBuffer(ReadOnlySpan<byte> source)
     {
-        var begin = EncodingUtilities.Wrap(_bufferPosition);
+        var begin = EncodingUtilities.Wrap(BufferPosition);
         var end = begin + source.Length;
         if (end > EncodingGlobals.BufferSize)
         {
@@ -27,7 +31,7 @@ internal class LzBuffer
             source.CopyTo(Buffer.AsSpan(begin));
         }
 
-        _bufferPosition += source.Length;
+        BufferPosition += source.Length;
     }
 
     protected int NumberMatch(int positionWrapped, ReadOnlySpan<byte> pointer, int limitNumber)

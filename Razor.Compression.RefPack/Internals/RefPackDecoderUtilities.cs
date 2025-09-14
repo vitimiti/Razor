@@ -1,6 +1,10 @@
-﻿// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+﻿// -----------------------------------------------------------------------
+// <copyright file="RefPackDecoderUtilities.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using Razor.Extensions;
 
@@ -28,10 +32,7 @@ internal static class RefPackDecoderUtilities
     {
         if (!IsRefPackCompressed(stream))
         {
-            throw new ArgumentException(
-                "The stream is not RefPack compressed data.",
-                nameof(stream)
-            );
+            throw new ArgumentException("The stream is not RefPack compressed data.", nameof(stream));
         }
 
         ArgumentOutOfRangeException.ThrowIfLessThan(stream.Length, 2);

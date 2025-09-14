@@ -22,7 +22,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Browser.Engine", "Raz
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Attributes", "Razor.Attributes\Razor.Attributes.csproj", "{56129738-6B22-4861-8969-1FC9FB3ED9F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Generics", "Razor.Generics\Razor.Generics.csproj", "{62127E01-3DEF-4722-9C43-097AC37826C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Abstractions", "Razor.Abstractions\Razor.Abstractions.csproj", "{62127E01-3DEF-4722-9C43-097AC37826C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Generators", "Razor.Generators\Razor.Generators.csproj", "{F949F5ED-0CC6-471C-A490-8A6859C112FC}"
 EndProject

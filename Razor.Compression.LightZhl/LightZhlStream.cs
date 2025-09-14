@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="LightZhlStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
@@ -25,6 +29,32 @@ public sealed class LightZhlStream : Stream
     private int _decompressedPosition;
     private MemoryStream? _uncompressedBuffer;
     private bool _compressDirty;
+
+    /// <summary>Initializes a new instance of the <see cref="LightZhlStream"/> class.A sealed class that represents a stream for compression and decompression using the LightZhl compression mechanism.</summary>
+    /// <param name="stream">The stream to wrap.</param>
+    /// <param name="mode">The compression mode to use.</param>
+    /// <param name="leaveOpen">Indicates whether the underlying stream should be left open after the stream is disposed.</param>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
+    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="LightZhlStream"/> to be able to read or write data.</remarks>
+    public LightZhlStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (mode is CompressionMode.Compress && !stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking when used for compression.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
+
+        if (_mode != CompressionMode.Compress)
+        {
+            return;
+        }
+
+        _uncompressedBuffer = new MemoryStream();
+        _compressDirty = false;
+    }
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value>true if the stream supports reading and is in decompression mode, and the underlying stream is readable; otherwise, false.</value>
@@ -54,62 +84,6 @@ public sealed class LightZhlStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
-    }
-
-    /// <summary>A sealed class that represents a stream for compression and decompression using the LightZhl compression mechanism.</summary>
-    /// <param name="stream">The stream to wrap.</param>
-    /// <param name="mode">The compression mode to use.</param>
-    /// <param name="leaveOpen">Indicates whether the underlying stream should be left open after the stream is disposed.</param>
-    /// <exception cref="ArgumentException"><paramref name="stream"/> does not support seeking.</exception>
-    /// <remarks>The <paramref name="stream"/> must support seeking for the <see cref="LightZhlStream"/> to be able to read or write data.</remarks>
-    public LightZhlStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (mode is CompressionMode.Compress && !stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking when used for compression.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-
-        if (_mode != CompressionMode.Compress)
-        {
-            return;
-        }
-
-        _uncompressedBuffer = new MemoryStream();
-        _compressDirty = false;
-    }
-
-    /// <summary>Releases the resources used by the <see cref="LightZhlStream"/>.</summary>
-    /// <param name="disposing">Indicates whether the method is being called from a direct call to <see cref="Dispose"/> (true) or from a finalizer (false).</param>
-    /// <remarks>If <paramref name="disposing"/> is true, this method releases all managed and unmanaged resources. If false, only unmanaged resources are released.</remarks>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            // If we are in compression mode, finalize the compressed payload on dispose.
-            if (_mode == CompressionMode.Compress)
-            {
-                FlushCompressedPayload();
-                _uncompressedBuffer?.Dispose();
-                _uncompressedBuffer = null;
-            }
-
-            if (!_leaveOpen)
-            {
-                _stream.Dispose();
-            }
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
     }
 
     /// <summary>Flushes the underlying stream and writes any buffered compressed data to the wrapped stream.</summary>
@@ -448,6 +422,36 @@ public sealed class LightZhlStream : Stream
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Releases the resources used by the <see cref="LightZhlStream"/>.</summary>
+    /// <param name="disposing">Indicates whether the method is being called from a direct call to <see cref="Dispose"/> (true) or from a finalizer (false).</param>
+    /// <remarks>If <paramref name="disposing"/> is true, this method releases all managed and unmanaged resources. If false, only unmanaged resources are released.</remarks>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            // If we are in compression mode, finalize the compressed payload on dispose.
+            if (_mode == CompressionMode.Compress)
+            {
+                FlushCompressedPayload();
+                _uncompressedBuffer?.Dispose();
+                _uncompressedBuffer = null;
+            }
+
+            if (!_leaveOpen)
+            {
+                _stream.Dispose();
+            }
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
+    }
+
     private void EnsureDecompressedLoaded()
     {
         if (_decompressedBuffer != null)
@@ -457,6 +461,7 @@ public sealed class LightZhlStream : Stream
 
         // Read all compressed data from current position to end
         using var ms = new MemoryStream();
+
         // If stream can seek, we read from current position to end
         // without resetting to 0, to respect caller's positioning.
         // For non-seekable, CopyTo will read to EOF.
@@ -493,21 +498,19 @@ public sealed class LightZhlStream : Stream
                 _decompressedPosition = 0;
                 return;
             }
-            // Grow and retry
+
+            // Grow and retry.
             // Avoid unbounded runaway: cap capacity growth to something reasonable.
             // If it still fails at huge sizes, we surface an error.
-            checked
+            var next = capacity <= 16 * 1024 * 1024 ? capacity * 2 : capacity + (capacity / 2);
+            if (next <= capacity || next > 256 * 1024 * 1024)
             {
-                var next = capacity <= 16 * 1024 * 1024 ? capacity * 2 : capacity + (capacity / 2);
-                if (next <= capacity || next > 256 * 1024 * 1024)
-                {
-                    throw new InvalidOperationException(
-                        "Failed to decode LightZhl stream: output size appears to be unbounded or data is invalid."
-                    );
-                }
-
-                capacity = next;
+                throw new InvalidOperationException(
+                    "Failed to decode LightZhl stream: output size appears to be unbounded or data is invalid."
+                );
             }
+
+            capacity = next;
         }
     }
 

@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="IBrowserInstance.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Browser.Abstractions;
 
@@ -19,7 +23,7 @@ public interface IBrowserInstance
     /// <value>An array of strings representing the command-line arguments.</value>
     ICollection<string> CommandLineArgs { get; }
 
-    /// <summary>Indicates whether the current build is a release build.</summary>
+    /// <summary>Gets a value indicating whether the current build is a release build.</summary>
     /// <value>A boolean where <c>true</c> represents a release build and <c>false</c> represents a non-release (e.g., debug) build.</value>
     bool IsReleaseBuild { get; }
 

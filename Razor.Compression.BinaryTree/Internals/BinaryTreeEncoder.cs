@@ -1,6 +1,10 @@
-﻿// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+﻿// -----------------------------------------------------------------------
+// <copyright file="BinaryTreeEncoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using Razor.Extensions;
 
@@ -144,6 +148,7 @@ internal static class BinaryTreeEncoder
 
                     break;
                 }
+
                 case 3:
                     destination[destinationIndex - 1] = (byte)clue;
                     destination[destinationIndex++] = pointerIndex;
@@ -490,6 +495,7 @@ internal static class BinaryTreeEncoder
         }
 
         context.ClueQueue[clue] = 2;
+
         // Best arrays
         state.BestValue[0] = uint.MaxValue;
 
@@ -504,17 +510,27 @@ internal static class BinaryTreeEncoder
     private sealed class EncodeContext
     {
         public int PackBits { get; set; }
+
         public uint WorkPattern { get; set; }
+
         public int PointerLength { get; set; }
+
         public uint Length { get; init; }
+
         public int BufferEndExclusive { get; set; }
 
-        public uint[] Masks { get; } = new uint[0x11];
+        public uint[] Masks { get; } = new uint[17];
+
         public byte[] ClueQueue { get; } = new byte[Codes];
+
         public byte[] Right { get; } = new byte[Codes];
+
         public byte[] Join { get; } = new byte[Codes];
+
         public byte[] Buffer1 { get; set; } = [];
+
         public byte[] Buffer2 { get; set; } = [];
+
         public byte[] BufferBase { get; set; } = [];
 
         public required BinaryWriter Writer { get; init; }
@@ -523,19 +539,31 @@ internal static class BinaryTreeEncoder
     private sealed class TreePackState
     {
         public short[] Count { get; } = new short[0x10000];
+
         public uint[] Count2 { get; } = new uint[Codes];
+
         public byte[] TryQueue { get; } = new byte[Codes];
+
         public byte[] FreeQueue { get; } = new byte[Codes];
+
         public byte[] BestJoin { get; } = new byte[Codes];
+
         public uint[] BestNumber { get; } = new uint[Codes];
+
         public uint[] BestValue { get; } = new uint[Codes];
+
         public uint[] BtNode { get; } = new uint[Codes];
+
         public uint[] BtLeft { get; } = new uint[Codes];
+
         public uint[] BtRight { get; } = new uint[Codes];
+
         public uint[] SortPointer { get; } = new uint[Codes];
 
         public uint FreePointer { get; set; }
+
         public uint BtSize { get; set; }
+
         public int Ratio { get; } = 2;
     }
 }

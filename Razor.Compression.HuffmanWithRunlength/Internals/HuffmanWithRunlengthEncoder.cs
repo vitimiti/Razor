@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="HuffmanWithRunlengthEncoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.HuffmanWithRunlength.Internals;
 
@@ -1315,44 +1319,10 @@ internal static class HuffmanWithRunlengthEncoder
         return [.. context.OutBytes];
     }
 
-    private sealed class EncodeContext
-    {
-        public byte[] QueueLeapCode { get; } = new byte[NumberOfCodes];
-        public uint[] Count { get; } = new uint[768];
-        public uint[] BitNumber { get; } = new uint[MaxBits + 1];
-        public uint[] RepeatBits { get; } = new uint[RepeatTable];
-        public uint[] RepeatBase { get; } = new uint[RepeatTable];
-        public uint[] TreeLeft { get; } = new uint[TreeSize];
-        public uint[] TreeRight { get; } = new uint[TreeSize];
-        public uint[] BitsArray { get; } = new uint[NumberOfCodes];
-        public uint[] PatternArray { get; } = new uint[NumberOfCodes];
-        public uint[] Masks { get; } = new uint[17];
-
-        public uint PackBits { get; set; }
-        public uint WorkPattern { get; set; }
-
-        // Input buffer
-        public byte[] Buffer { get; set; } = [];
-        public int FLength { get; set; }
-        public uint MostBits { get; set; }
-        public uint Codes { get; set; }
-        public uint Clue { get; set; }
-        public uint DClue { get; set; }
-        public uint Clues { get; set; }
-        public uint DClues { get; set; }
-        public int MinDelta { get; set; }
-        public int MaxDelta { get; set; }
-        public uint PackedLength { get; set; }
-        public uint Length { get; set; }
-        public uint[] SortPointer { get; } = new uint[NumberOfCodes];
-
-        // Output sink (byte accumulator)
-        public List<byte> OutBytes { get; } = new(1024);
-    }
-
     private readonly struct NodePair(uint ptr, uint val)
     {
         public uint Ptr { get; } = ptr;
+
         public uint Val { get; } = val;
     }
 
@@ -1375,9 +1345,70 @@ internal static class HuffmanWithRunlengthEncoder
     private struct MinRepFrame
     {
         public uint Remaining { get; init; }
+
         public uint R { get; init; }
+
         public byte State { get; set; } // 0: before first child, 1: after first child, 2: after second child
+
         public int Min { get; set; } // result from MinRep(remaining, r-1)
+
         public uint Use { get; set; } // remaining / r
+    }
+
+    private sealed class EncodeContext
+    {
+        public byte[] QueueLeapCode { get; } = new byte[NumberOfCodes];
+
+        public uint[] Count { get; } = new uint[768];
+
+        public uint[] BitNumber { get; } = new uint[MaxBits + 1];
+
+        public uint[] RepeatBits { get; } = new uint[RepeatTable];
+
+        public uint[] RepeatBase { get; } = new uint[RepeatTable];
+
+        public uint[] TreeLeft { get; } = new uint[TreeSize];
+
+        public uint[] TreeRight { get; } = new uint[TreeSize];
+
+        public uint[] BitsArray { get; } = new uint[NumberOfCodes];
+
+        public uint[] PatternArray { get; } = new uint[NumberOfCodes];
+
+        public uint[] Masks { get; } = new uint[17];
+
+        public uint PackBits { get; set; }
+
+        public uint WorkPattern { get; set; }
+
+        // Input buffer
+        public byte[] Buffer { get; set; } = [];
+
+        public int FLength { get; set; }
+
+        public uint MostBits { get; set; }
+
+        public uint Codes { get; set; }
+
+        public uint Clue { get; set; }
+
+        public uint DClue { get; set; }
+
+        public uint Clues { get; set; }
+
+        public uint DClues { get; set; }
+
+        public int MinDelta { get; set; }
+
+        public int MaxDelta { get; set; }
+
+        public uint PackedLength { get; set; }
+
+        public uint Length { get; set; }
+
+        public uint[] SortPointer { get; } = new uint[NumberOfCodes];
+
+        // Output sink (byte accumulator)
+        public List<byte> OutBytes { get; } = new(1024);
     }
 }

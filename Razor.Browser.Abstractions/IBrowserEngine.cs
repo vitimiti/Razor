@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="IBrowserEngine.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Browser.Abstractions;
 
@@ -25,11 +29,11 @@ public interface IBrowserEngine
 
     /// <summary>Initializes the browser engine with the specified graphics API device.</summary>
     /// <param name="graphicsApiDevice">An <see cref="IntPtr"/> pointing to the graphics API device used for rendering.</param>
-    /// <return>A task that represents the asynchronous initialization operation.</return>
+    /// <returns>A task that represents the asynchronous initialization operation.</returns>
     Task InitializeAsync(IntPtr graphicsApiDevice);
 
     /// <summary>Shuts down the browser engine and releases any associated resources.</summary>
-    /// <return>A task that represents the asynchronous shutdown operation.</return>
+    /// <returns>A task that represents the asynchronous shutdown operation.</returns>
     Task ShutdownAsync();
 
     /// <summary>Creates a new browser instance with the specified parameters.</summary>
@@ -39,7 +43,7 @@ public interface IBrowserEngine
     /// <param name="size">A tuple containing the width and height of the browser instance.</param>
     /// <param name="options">The browser configuration options specified as <see cref="BrowserOptions"/>.</param>
     /// <param name="gameInterface">An object representing the game interface to be used with the browser.</param>
-    /// <return>A task that represents the asynchronous browser creation operation. The result is a <see cref="string"/> containing the identifier of the created browser instance.</return>
+    /// <returns>A task that represents the asynchronous browser creation operation. The result is a <see cref="string"/> containing the identifier of the created browser instance.</returns>
     Task<string> CreateBrowserAsync(
         string browserName,
         Uri url,
@@ -51,42 +55,42 @@ public interface IBrowserEngine
 
     /// <summary>Destroys the browser instance with the specified name and releases any associated resources.</summary>
     /// <param name="browserName">The name of the browser instance to be destroyed.</param>
-    /// <return>A task that represents the asynchronous browser destruction operation.</return>
+    /// <returns>A task that represents the asynchronous browser destruction operation.</returns>
     Task DestroyBrowserAsync(string browserName);
 
     /// <summary>Navigates the specified browser to the given URL.</summary>
     /// <param name="browserName">The name of the browser instance to navigate.</param>
     /// <param name="url">The destination URL to navigate to.</param>
-    /// <return>A task that represents the asynchronous navigation operation.</return>
+    /// <returns>A task that represents the asynchronous navigation operation.</returns>
     Task NavigateAsync(string browserName, Uri url);
 
     /// <summary>Gets the window handle for the specified browser instance.</summary>
     /// <param name="browserName">The name of the browser instance whose window handle is to be retrieved.</param>
-    /// <return>A task that represents the asynchronous operation, containing an <see cref="IntPtr"/> to the window handle if the browser exists, or <see cref="IntPtr.Zero"/> otherwise.</return>
+    /// <returns>A task that represents the asynchronous operation, containing an <see cref="IntPtr"/> to the window handle if the browser exists, or <see cref="IntPtr.Zero"/> otherwise.</returns>
     Task<IntPtr> GetWindowHandleAsync(string browserName);
 
     /// <summary>Checks whether the browser instance with the specified name is currently open.</summary>
     /// <param name="browserName">The name of the browser instance to check.</param>
-    /// <return>A task that represents the asynchronous operation, containing a boolean value indicating whether the browser instance is open.</return>
+    /// <returns>A task that represents the asynchronous operation, containing a boolean value indicating whether the browser instance is open.</returns>
     Task<bool> IsOpenAsync(string browserName);
 
     /// <summary>Renders the browser content to the specified back buffer using the graphics API.</summary>
     /// <param name="backBufferIndex">An integer representing the index of the back buffer to render to.</param>
-    /// <return>A task that represents the asynchronous rendering operation.</return>
+    /// <returns>A task that represents the asynchronous rendering operation.</returns>
     Task GraphicsApiRenderAsync(int backBufferIndex);
 
     /// <summary>Updates the browser engine state for the current frame using the graphics API.</summary>
-    /// <return>A task that represents the asynchronous operation for updating the graphics API state.</return>
+    /// <returns>A task that represents the asynchronous operation for updating the graphics API state.</returns>
     Task GraphicsApiUpdateAsync();
 
     /// <summary>Retrieves the update rate for the specified browser.</summary>
     /// <param name="browserName">The name of the browser whose update rate is being retrieved.</param>
-    /// <return>A task that represents the asynchronous operation, containing the update rate as an integer.</return>
+    /// <returns>A task that represents the asynchronous operation, containing the update rate as an integer.</returns>
     Task<int> GetUpdateRateAsync(string browserName);
 
     /// <summary>Sets the update rate for the specified browser instance.</summary>
     /// <param name="browserName">The name of the browser instance for which to set the update rate.</param>
     /// <param name="updateRate">The desired update rate, in updates per second.</param>
-    /// <return>A task that represents the asynchronous operation of setting the update rate.</return>
+    /// <returns>A task that represents the asynchronous operation of setting the update rate.</returns>
     Task SetUpdateRateAsync(string browserName, int updateRate);
 }

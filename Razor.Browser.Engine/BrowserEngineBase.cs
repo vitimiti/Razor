@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="BrowserEngineBase.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using Razor.Browser.Abstractions;
 
@@ -9,19 +13,11 @@ namespace Razor.Browser.Engine;
 /// <summary>Represents the base class for implementing a browser engine, providing core functionalities including browser instance management, initialization, destruction, navigation, and rendering operations.</summary>
 public abstract class BrowserEngineBase : IBrowserEngine
 {
-    /// <summary>Represents a collection of active browser instances managed by the browser engine.</summary>
-    /// <value>A dictionary that maps browser instance names (as strings) to their respective <see cref="IBrowserInstance"/> objects. This property is used internally to manage creation, navigation, and destruction of browser instances.</value>
-    protected Dictionary<string, IBrowserInstance> Browsers { get; } = [];
-
-    /// <summary>Indicates whether the browser engine has been successfully initialized.</summary>
-    /// <value>A boolean value that is <c>true</c> if the engine has completed initialization, or <c>false</c> otherwise. This property is used internally to track the readiness of the engine for browser-related operations.</value>
-    protected bool Initialized { get; }
-
     /// <summary>Gets or sets the URL to be displayed when a navigation attempt encounters an error.</summary>
     /// <value>A string representing the error page URL. Used to handle navigation errors and display an appropriate fallback page.</value>
     public Uri BadPageUrl { get; set; } = new("about:blank");
 
-    /// <summary>Specifies the URL to be displayed when a browser instance is in the process of loading a page.</summary>
+    /// <summary>Gets or sets the URL to be displayed when a browser instance is in the process of loading a page.</summary>
     /// <value>A string representing the URL of the loading page. This value is configurable and helps provide a visual cue during navigation or page load operations.</value>
     public Uri LoadingPageUrl { get; set; } = new("about:blank");
 
@@ -29,9 +25,17 @@ public abstract class BrowserEngineBase : IBrowserEngine
     /// <value>A string representing the file path to the mouse input configuration or script. This property may be useful for automating or customizing mouse behavior within the browser engine.</value>
     public string MouseFileName { get; set; } = string.Empty;
 
-    /// <summary>Specifies the file name used to indicate that the mouse is in a 'busy' state within the browser engine.</summary>
+    /// <summary>Gets or sets the file name used to indicate that the mouse is in a 'busy' state within the browser engine.</summary>
     /// <value>A string representing the path or name of the file used for displaying a busy mouse state. This property is typically utilized internally to manage visual feedback for operations requiring user wait.</value>
     public string MouseBusyFileName { get; set; } = string.Empty;
+
+    /// <summary>Gets a collection of active browser instances managed by the browser engine.</summary>
+    /// <value>A dictionary that maps browser instance names (as strings) to their respective <see cref="IBrowserInstance"/> objects. This property is used internally to manage creation, navigation, and destruction of browser instances.</value>
+    protected Dictionary<string, IBrowserInstance> Browsers { get; } = [];
+
+    /// <summary>Gets a value indicating whether the browser engine has been successfully initialized.</summary>
+    /// <value>A boolean value that is <c>true</c> if the engine has completed initialization, or <c>false</c> otherwise. This property is used internally to track the readiness of the engine for browser-related operations.</value>
+    protected bool Initialized { get; }
 
     /// <summary>Asynchronously initializes the browser engine with the specified graphics API device.</summary>
     /// <param name="graphicsApiDevice">A handle to the graphics API device used for rendering in the browser engine.</param>

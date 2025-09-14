@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="BigFileStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -13,6 +17,14 @@ public sealed class BigFileStream : Stream
     private readonly int _start;
     private readonly int _length;
     private int _pos;
+
+    private BigFileStream(byte[] buffer, int start, int length)
+    {
+        _buffer = buffer;
+        _start = start;
+        _length = length;
+        _pos = 0;
+    }
 
     /// <summary>Gets a value indicating whether the stream supports reading.</summary>
     /// <value>Always returns <c>true</c> as the <see cref="BigFileStream"/> is read-only.</value>
@@ -43,19 +55,6 @@ public sealed class BigFileStream : Stream
             _pos = (int)value;
         }
     }
-
-    private BigFileStream(byte[] buffer, int start, int length)
-    {
-        _buffer = buffer;
-        _start = start;
-        _length = length;
-        _pos = 0;
-    }
-
-    internal static BigFileStream FromSharedBuffer(byte[] sharedBuffer, int start, int length) =>
-        new(sharedBuffer, start, length);
-
-    internal static BigFileStream FromOwnedBuffer(byte[] ownedBuffer) => new(ownedBuffer, 0, ownedBuffer.Length);
 
     /// <summary>Flushes the stream. This method is a no-op for the BigFileStream as it is a read-only stream.</summary>
     public override void Flush()
@@ -126,4 +125,9 @@ public sealed class BigFileStream : Stream
     /// <exception cref="NotSupportedException">Always thrown to indicate that writing is not supported.</exception>
     public override void Write(byte[] buffer, int offset, int count) =>
         throw new NotSupportedException("Read-only stream.");
+
+    internal static BigFileStream FromSharedBuffer(byte[] sharedBuffer, int start, int length) =>
+        new(sharedBuffer, start, length);
+
+    internal static BigFileStream FromOwnedBuffer(byte[] ownedBuffer) => new(ownedBuffer, 0, ownedBuffer.Length);
 }

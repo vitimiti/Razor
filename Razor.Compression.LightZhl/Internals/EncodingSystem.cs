@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="EncodingSystem.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
@@ -8,43 +12,6 @@ internal sealed class EncodingSystem(EncodingStat stat, BitWriter bitWriter)
 {
     internal const int MaxMatchOver = 517;
     internal const int MaxRaw = 64;
-
-    private void CallStat()
-    {
-        // avoid recursion: nextStat >= 2
-        stat.NextStat = 2;
-
-        PutSymbol(EncodingGlobals.SymbolCount - 2);
-
-        var groups = new int[16];
-        stat.CalculateStat(groups);
-
-        var lastNBits = 0;
-        for (var i = 0; i < 16; ++i)
-        {
-            var bitsCount = groups[i];
-            var delta = bitsCount - lastNBits;
-            lastNBits = bitsCount;
-
-            // emit delta steps of zeroes followed by a one
-            bitWriter.PutBits(delta + 1, 1);
-        }
-    }
-
-    private void PutSymbol(ushort symbol)
-    {
-        if (--stat.NextStat <= 0)
-        {
-            CallStat();
-        }
-
-        stat.Stat[symbol]++;
-
-        ref EncodingSymbol item = ref stat.SymbolTable[symbol];
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(item.NumberOfBits, 0);
-
-        bitWriter.PutBits(item.NumberOfBits, item.Code);
-    }
 
     public void PutRaw(ReadOnlySpan<byte> source)
     {
@@ -94,5 +61,42 @@ internal sealed class EncodingSystem(EncodingStat stat, BitWriter bitWriter)
         PutSymbol(EncodingGlobals.SymbolCount - 1);
         bitWriter.FlushEos();
         return bitWriter.BytesWritten;
+    }
+
+    private void CallStat()
+    {
+        // avoid recursion: nextStat >= 2
+        stat.NextStat = 2;
+
+        PutSymbol(EncodingGlobals.SymbolCount - 2);
+
+        var groups = new int[16];
+        stat.CalculateStat(groups);
+
+        var lastNBits = 0;
+        for (var i = 0; i < 16; ++i)
+        {
+            var bitsCount = groups[i];
+            var delta = bitsCount - lastNBits;
+            lastNBits = bitsCount;
+
+            // emit delta steps of zeroes followed by a one
+            bitWriter.PutBits(delta + 1, 1);
+        }
+    }
+
+    private void PutSymbol(ushort symbol)
+    {
+        if (--stat.NextStat <= 0)
+        {
+            CallStat();
+        }
+
+        stat.Stat[symbol]++;
+
+        ref EncodingSymbol item = ref stat.SymbolTable[symbol];
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(item.NumberOfBits, 0);
+
+        bitWriter.PutBits(item.NumberOfBits, item.Code);
     }
 }

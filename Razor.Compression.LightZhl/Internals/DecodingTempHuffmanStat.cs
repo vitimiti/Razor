@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="DecodingTempHuffmanStat.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
@@ -11,6 +15,18 @@ internal readonly struct DecodingTempHuffmanStat(short i, short n)
 {
     public readonly short I = i;
     private readonly short _n = n;
+
+    public static bool operator ==(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.Equals(y);
+
+    public static bool operator !=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => !x.Equals(y);
+
+    public static bool operator <(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) < 0;
+
+    public static bool operator >(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) > 0;
+
+    public static bool operator <=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) <= 0;
+
+    public static bool operator >=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) >= 0;
 
     public bool Equals(DecodingTempHuffmanStat other) => I == other.I && _n == other._n;
 
@@ -32,16 +48,4 @@ internal readonly struct DecodingTempHuffmanStat(short i, short n)
             DecodingTempHuffmanStat other => CompareTo(other),
             _ => throw new ArgumentException($"Object must be of type {nameof(DecodingTempHuffmanStat)}"),
         };
-
-    public static bool operator ==(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) == 0;
-
-    public static bool operator !=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) != 0;
-
-    public static bool operator <(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) < 0;
-
-    public static bool operator >(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) > 0;
-
-    public static bool operator <=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) <= 0;
-
-    public static bool operator >=(DecodingTempHuffmanStat x, DecodingTempHuffmanStat y) => x.CompareTo(y) >= 0;
 }

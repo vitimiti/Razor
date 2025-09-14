@@ -363,7 +363,16 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
-file_header_template = Licensed to the Razor contributors under one or more agreements.\nThe Razor project licenses this file to you under the MIT license.\nSee the LICENSE file in the project root for more information.
-
-# Implement with Copilot
+# Suppression to respect project's style
 dotnet_diagnostic.IDE3000.severity = none
+dotnet_diagnostic.SA1000.severity = none
+dotnet_diagnostic.SA1009.severity = none
+dotnet_diagnostic.SA1010.severity = none
+dotnet_diagnostic.SA1011.severity = none
+dotnet_diagnostic.SA1101.severity = none
+dotnet_diagnostic.SA1111.severity = none
+dotnet_diagnostic.SA1206.severity = none
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1313.severity = none
+dotnet_diagnostic.SA1500.severity = none
+dotnet_diagnostic.SA1502.severity = none

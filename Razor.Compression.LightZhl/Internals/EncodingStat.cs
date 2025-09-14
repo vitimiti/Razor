@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="EncodingStat.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
@@ -8,11 +12,13 @@ internal sealed class EncodingStat
 {
     private const int RecalculateLength = 0x1000;
 
-    internal short[] Stat { get; } = new short[EncodingGlobals.SymbolCount];
-    internal int NextStat { get; set; } = RecalculateLength;
-    internal EncodingSymbol[] SymbolTable { get; } = new EncodingSymbol[EncodingGlobals.SymbolCount];
-
     internal EncodingStat() => EncodingGlobals.InitialSymbolTable.CopyTo(SymbolTable, 0);
+
+    internal short[] Stat { get; } = new short[EncodingGlobals.SymbolCount];
+
+    internal int NextStat { get; set; } = RecalculateLength;
+
+    internal EncodingSymbol[] SymbolTable { get; } = new EncodingSymbol[EncodingGlobals.SymbolCount];
 
     internal void CalculateStat(int[] groups)
     {
@@ -39,20 +45,6 @@ internal sealed class EncodingStat
         }
 
         groups[j] = bitsCount;
-    }
-
-    private int BuildAndSortTemp(Span<EncodingTempHuffStat> source)
-    {
-        var total = 0;
-        for (var j = 0; j < EncodingGlobals.SymbolCount; j++)
-        {
-            source[j] = new EncodingTempHuffStat((short)j, Stat[j]);
-            total += Stat[j];
-            Stat[j] = (short)(Stat[j] >> 1);
-        }
-
-        EncodingUtilities.ShellSort(source);
-        return total;
     }
 
     private static (int BitsCount, int Count, int Advanced) ComputeGroupBits(
@@ -215,6 +207,20 @@ internal sealed class EncodingStat
         }
 
         return (bestBitsCount, bestBitsCount15);
+    }
+
+    private int BuildAndSortTemp(Span<EncodingTempHuffStat> source)
+    {
+        var total = 0;
+        for (var j = 0; j < EncodingGlobals.SymbolCount; j++)
+        {
+            source[j] = new EncodingTempHuffStat((short)j, Stat[j]);
+            total += Stat[j];
+            Stat[j] = (short)(Stat[j] >> 1);
+        }
+
+        EncodingUtilities.ShellSort(source);
+        return total;
     }
 
     private void AssignCodes(Span<EncodingTempHuffStat> source, int[] groups)

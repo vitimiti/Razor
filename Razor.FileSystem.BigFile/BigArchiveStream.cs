@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="BigArchiveStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Buffers;
 using System.Buffers.Binary;
@@ -15,6 +19,13 @@ public sealed class BigArchiveStream : Stream
     private readonly Dictionary<string, BigArchiveEntry> _entries;
 
     private bool _disposed;
+
+    private BigArchiveStream(string archivePath, MemoryStream archive, Dictionary<string, BigArchiveEntry> entries)
+    {
+        ArchivePath = archivePath;
+        _archive = archive;
+        _entries = entries;
+    }
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value><c>true</c> if the stream supports reading and has not been disposed; otherwise, <c>false</c>.</value>
@@ -54,31 +65,6 @@ public sealed class BigArchiveStream : Stream
     /// <value>An <see cref="IReadOnlyDictionary{TKey, TValue}" /> with keys as entry paths and values as <see cref="BigArchiveEntry" /> objects, representing the archive contents.</value>
     /// <remarks>The dictionary provides access to all entries within the archive. Operations on this property are designed to ensure thread safety. Accessing this property after the stream is disposed will result in undefined behavior.</remarks>
     public IReadOnlyDictionary<string, BigArchiveEntry> Entries => _entries;
-
-    private BigArchiveStream(string archivePath, MemoryStream archive, Dictionary<string, BigArchiveEntry> entries)
-    {
-        ArchivePath = archivePath;
-        _archive = archive;
-        _entries = entries;
-    }
-
-    /// <summary>Releases the unmanaged resources used by the instance and optionally releases the managed resources.</summary>
-    /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _archive.Dispose();
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
-    }
 
     /// <summary>Opens a specified archive file and returns a stream for accessing its entries.</summary>
     /// <param name="path">The path to the archive file to be opened.</param>
@@ -249,6 +235,24 @@ public sealed class BigArchiveStream : Stream
 
         size = 0;
         return false;
+    }
+
+    /// <summary>Releases the unmanaged resources used by the instance and optionally releases the managed resources.</summary>
+    /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            _archive.Dispose();
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
     }
 
     private static byte[] ReadString(BinaryReader reader)

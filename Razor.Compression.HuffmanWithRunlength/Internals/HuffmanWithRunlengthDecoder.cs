@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="HuffmanWithRunlengthDecoder.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.HuffmanWithRunlength.Internals;
 
@@ -641,7 +645,9 @@ internal static class HuffmanWithRunlengthDecoder
 
                 break;
             }
-            case 0x34FB or 0xB4FB:
+
+            case 0x34FB
+            or 0xB4FB:
             {
                 var i = 0;
                 var nextCharInner = 0;
@@ -654,6 +660,7 @@ internal static class HuffmanWithRunlengthDecoder
 
                 break;
             }
+
             default:
                 break;
         }
@@ -746,9 +753,13 @@ internal static class HuffmanWithRunlengthDecoder
     private struct DecoderState
     {
         public byte[] Pack { get; init; }
+
         public int SourceIndex { get; set; }
+
         public uint BitsUnshifted { get; set; }
+
         public int BitsLeft { get; set; }
+
         public uint Bits { get; set; }
     }
 
@@ -762,18 +773,26 @@ internal static class HuffmanWithRunlengthDecoder
     private struct QuickTables
     {
         public byte[] QuickCode { get; init; }
+
         public byte[] QuickLength { get; init; }
+
         public int QuickCodePointer { get; set; }
+
         public int QuickLengthPointer { get; set; }
     }
 
     private struct HuffmanContext
     {
         public uint[] CompareTable { get; init; }
+
         public byte[] CodeTable { get; init; }
+
         public int[] BitNumberTable { get; init; }
+
         public int MostBits { get; init; }
+
         public byte Clue { get; init; }
+
         public int ClueLength { get; set; }
     }
 

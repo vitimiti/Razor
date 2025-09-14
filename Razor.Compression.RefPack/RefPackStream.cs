@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="RefPackStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
@@ -23,6 +27,28 @@ public sealed class RefPackStream : Stream
     private int _decodedReadPosition;
     private bool _decodedInitialized;
     private bool _encodedWritten;
+
+    /// <summary>Initializes a new instance of the <see cref="RefPackStream"/> class.Represents a stream implementation for handling RefPack compression and decompression.</summary>
+    /// <param name="stream">The stream to wrap.</param>
+    /// <param name="mode">The compression mode to use.</param>
+    /// <param name="leaveOpen">True to leave the stream open after disposing; false to close the stream.</param>
+    /// <remarks>This class is designed to work with RefPack compression algorithms, supporting both compression and decompression modes. It requires a seekable stream for operation and optionally allows keeping the underlying stream open after the RefPackStream is disposed.</remarks>
+    /// <exception cref="ArgumentException">Thrown when the provided stream does not support seeking.</exception>
+    public RefPackStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _mode = mode;
+        _leaveOpen = leaveOpen;
+        if (_mode is CompressionMode.Compress)
+        {
+            _writeBuffer = new MemoryStream();
+        }
+    }
 
     /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
     /// <value><c>true</c> if the stream supports reading in decompress mode and has not been disposed; otherwise, <c>false</c>.</value>
@@ -61,49 +87,6 @@ public sealed class RefPackStream : Stream
     {
         get => throw new NotSupportedException("Getting stream position is not supported.");
         set => throw new NotSupportedException("Setting stream position is not supported.");
-    }
-
-    /// <summary>Represents a stream implementation for handling RefPack compression and decompression.</summary>
-    /// <remarks>This class is designed to work with RefPack compression algorithms, supporting both compression and decompression modes. It requires a seekable stream for operation and optionally allows keeping the underlying stream open after the RefPackStream is disposed.</remarks>
-    /// <exception cref="ArgumentException">Thrown when the provided stream does not support seeking.</exception>
-    public RefPackStream([NotNull] Stream stream, CompressionMode mode, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _mode = mode;
-        _leaveOpen = leaveOpen;
-        if (_mode is CompressionMode.Compress)
-        {
-            _writeBuffer = new MemoryStream();
-        }
-    }
-
-    /// <summary>Releases the unmanaged resources used by the RefPackStream and optionally releases the managed resources.</summary>
-    /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing && _mode is CompressionMode.Compress)
-        {
-            // Ensure we encode and write once before closing.
-            EnsureCompressedWritten();
-        }
-
-        if (disposing && !_leaveOpen)
-        {
-            _stream.Dispose();
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
     }
 
     /// <summary>Flushes the underlying stream and ensures all compressed data is written.</summary>
@@ -234,10 +217,7 @@ public sealed class RefPackStream : Stream
     /// <exception cref="ObjectDisposedException">Thrown when the stream has been disposed.</exception>
     /// <exception cref="NotSupportedException">Thrown when the stream does not support reading.</exception>
     /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
-    public override ValueTask<int> ReadAsync(
-        Memory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -355,10 +335,7 @@ public sealed class RefPackStream : Stream
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
     /// <exception cref="ObjectDisposedException">Thrown when the stream is disposed.</exception>
-    public override ValueTask WriteAsync(
-        ReadOnlyMemory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -403,6 +380,30 @@ public sealed class RefPackStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the unmanaged resources used by the RefPackStream and optionally releases the managed resources.</summary>
+    /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing && _mode is CompressionMode.Compress)
+        {
+            // Ensure we encode and write once before closing.
+            EnsureCompressedWritten();
+        }
+
+        if (disposing && !_leaveOpen)
+        {
+            _stream.Dispose();
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
     }
 
     private void EnsureDecoded()

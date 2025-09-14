@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="Compressor.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace Razor.Compression.LightZhl.Internals;
 
@@ -77,39 +81,6 @@ internal sealed class Compressor : LzBuffer
         return hash;
     }
 
-    private uint UpdateTable(uint hash, ReadOnlySpan<byte> source, int position, int length)
-    {
-        switch (length)
-        {
-            case <= 0:
-                return 0;
-            case > SkipHash:
-            {
-                ReadOnlySpan<byte> source1 = source[1..];
-                hash = 0;
-                foreach (var b in source1.Slice(length, Match))
-                {
-                    UpdateHash(ref hash, b);
-                }
-
-                return hash;
-            }
-            default:
-                break;
-        }
-
-        UpdateHashEx(ref hash, source);
-        ReadOnlySpan<byte> source2 = source[1..];
-
-        for (var i = 0; i < length; ++i)
-        {
-            _table[HashPosition(hash)] = (ushort)EncodingUtilities.Wrap(position + i);
-            UpdateHashEx(ref hash, source2[i..]);
-        }
-
-        return hash;
-    }
-
     private static void InitializeStartHash(int size, ReadOnlySpan<byte> source, ref uint hash)
     {
         if (size < Match)
@@ -151,6 +122,46 @@ internal sealed class Compressor : LzBuffer
         return extraMatch;
     }
 
+    private static void EmitRaw(EncodingSystem encoder, ReadOnlySpan<byte> source, ref int sourceIndex, int rawCount)
+    {
+        encoder.PutRaw(source.Slice(sourceIndex, rawCount));
+        sourceIndex += rawCount;
+    }
+
+    private uint UpdateTable(uint hash, ReadOnlySpan<byte> source, int position, int length)
+    {
+        switch (length)
+        {
+            case <= 0:
+                return 0;
+            case > SkipHash:
+            {
+                ReadOnlySpan<byte> source1 = source[1..];
+                hash = 0;
+                foreach (var b in source1.Slice(length, Match))
+                {
+                    UpdateHash(ref hash, b);
+                }
+
+                return hash;
+            }
+
+            default:
+                break;
+        }
+
+        UpdateHashEx(ref hash, source);
+        ReadOnlySpan<byte> source2 = source[1..];
+
+        for (var i = 0; i < length; ++i)
+        {
+            _table[HashPosition(hash)] = (ushort)EncodingUtilities.Wrap(position + i);
+            UpdateHashEx(ref hash, source2[i..]);
+        }
+
+        return hash;
+    }
+
     private bool TryBackwardExtendMatch(ReadOnlySpan<byte> sourceFromIndex, ref BackwardExtendState state)
     {
         var extraMatchLimit = int.Min(Min + EncodingSystem.MaxMatchOver - state.MatchLength, state.RawCount);
@@ -188,12 +199,6 @@ internal sealed class Compressor : LzBuffer
         return true;
     }
 
-    private static void EmitRaw(EncodingSystem encoder, ReadOnlySpan<byte> source, ref int sourceIndex, int rawCount)
-    {
-        encoder.PutRaw(source.Slice(sourceIndex, rawCount));
-        sourceIndex += rawCount;
-    }
-
     private void EmitMatch(
         EncodingSystem encoder,
         ReadOnlySpan<byte> source,
@@ -207,7 +212,7 @@ internal sealed class Compressor : LzBuffer
         hash = UpdateTable(
             hash,
             source[(args.SourceBaseIndex + args.RawCount + (args.UpdateSliceOffset - 1))..],
-            _bufferPosition + args.TablePositionOffset,
+            BufferPosition + args.TablePositionOffset,
             int.Min(
                 args.MatchLength - args.UpdateSliceOffset,
                 args.Size - (args.SourceBaseIndex + args.RawCount + args.UpdateSliceOffset)
@@ -266,7 +271,7 @@ internal sealed class Compressor : LzBuffer
         var state = new BackwardExtendState
         {
             RawCount = rawCount,
-            BufferPosition = _bufferPosition,
+            BufferPosition = BufferPosition,
             PositionOfHash = hashPos,
             MatchLength = matchLen,
             Hash = hash,
@@ -279,7 +284,7 @@ internal sealed class Compressor : LzBuffer
         }
 
         // propagate updated values back to caller
-        _bufferPosition = state.BufferPosition;
+        BufferPosition = state.BufferPosition;
         hashPos = state.PositionOfHash;
         matchLen = state.MatchLength;
         wrapBufPos = state.WrapBufferPosition;
@@ -322,7 +327,7 @@ internal sealed class Compressor : LzBuffer
         }
 
         // restore lazy state
-        _bufferPosition = lazy.LazyMatchBufPos;
+        BufferPosition = lazy.LazyMatchBufPos;
 
         hash = lazy.LazyMatchHash;
         UpdateHashEx(ref hash, source[(sourceIndex + lazy.LazyMatchNRaw)..]);
@@ -336,7 +341,7 @@ internal sealed class Compressor : LzBuffer
                 sourceIndex,
                 lazy.LazyMatchNRaw,
                 lazy.LazyMatchLen,
-                EncodingUtilities.Distance(_bufferPosition - lazy.LazyMatchHashPos),
+                EncodingUtilities.Distance(BufferPosition - lazy.LazyMatchHashPos),
                 TablePositionOffset: 2,
                 UpdateSliceOffset: 2, // one raw byte already accounted + one step
                 Size: size
@@ -360,7 +365,7 @@ internal sealed class Compressor : LzBuffer
             lazy.Length = current.MatchLen;
             lazy.PositionForHash = current.HashPos;
             lazy.RawCount = current.RawCount;
-            lazy.BufferPosition = _bufferPosition;
+            lazy.BufferPosition = BufferPosition;
             lazy.Hash = hash;
             return false;
         }
@@ -409,7 +414,7 @@ internal sealed class Compressor : LzBuffer
                     sourceIndex,
                     rawCount,
                     args.LazyMatchLen,
-                    EncodingUtilities.Distance(_bufferPosition - args.LazyMatchHashPos),
+                    EncodingUtilities.Distance(BufferPosition - args.LazyMatchHashPos),
                     TablePositionOffset: 1,
                     UpdateSliceOffset: 1,
                     Size: args.Size
@@ -448,7 +453,7 @@ internal sealed class Compressor : LzBuffer
         var rawCount = 0;
         var maxRaw = int.Min(srcLeft - Match, EncodingSystem.MaxRaw);
 
-        var lazy = new LazyStateMutable();
+        LazyStateMutable lazy = new();
         var lazyForceMatch = false;
 
         while (true)
@@ -456,7 +461,7 @@ internal sealed class Compressor : LzBuffer
             var hash2 = (uint)HashPosition(hash);
 
             int hashPos = _table[hash2];
-            var wrapBufPos = EncodingUtilities.Wrap(_bufferPosition);
+            var wrapBufPos = EncodingUtilities.Wrap(BufferPosition);
             _table[hash2] = (ushort)wrapBufPos;
 
             var matchLen = GetMatchLengthIfAny(
@@ -541,19 +546,28 @@ internal sealed class Compressor : LzBuffer
     private struct LazyStateMutable
     {
         public int Length { get; set; }
+
         public int PositionForHash { get; set; }
+
         public int RawCount { get; set; }
+
         public int BufferPosition { get; set; }
+
         public uint Hash { get; set; }
     }
 
     private struct BackwardExtendState
     {
         public int RawCount { get; set; }
+
         public int BufferPosition { get; set; }
+
         public int PositionOfHash { get; set; }
+
         public int MatchLength { get; set; }
+
         public int WrapBufferPosition { get; set; }
+
         public uint Hash { get; set; }
     }
 

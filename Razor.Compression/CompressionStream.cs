@@ -1,6 +1,10 @@
-// Licensed to the Razor contributors under one or more agreements.
-// The Razor project licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// -----------------------------------------------------------------------
+// <copyright file="CompressionStream.cs" company="Razor">
+// Copyright (c) Razor. All rights reserved.
+// Licensed under the MIT license.
+// See LICENSE.md for more information.
+// </copyright>
+// -----------------------------------------------------------------------
 
 using System.Buffers;
 using System.Buffers.Binary;
@@ -25,6 +29,43 @@ public sealed class CompressionStream : Stream
 
     private bool _disposed;
     private Stream? _decoder;
+
+    /// <summary>Initializes a new instance of the <see cref="CompressionStream"/> class.Provides functionality for handling compression and decompression streams using various compression types.</summary>
+    /// <remarks>This class extends <see cref="Stream"/> and supports reading, writing, and flushing operations based on the specified compression mode and type.</remarks>
+    /// <param name="stream">The underlying stream to use for reading and writing.</param>
+    /// <param name="type">The compression type to use for compression and decompression.</param>
+    /// <param name="leaveOpen"><c>true</c> to leave the stream open after the <see cref="CompressionStream"/> object is disposed; otherwise, <c>false</c>.</param>
+    /// <exception cref="ArgumentException">The stream must support seeking.</exception>
+    public CompressionStream([NotNull] Stream stream, CompressionType type, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _leaveOpen = leaveOpen;
+        _mode = CompressionMode.Compress;
+        _type = type;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="CompressionStream"/> class.Provides functionality for handling compression and decompression streams using various compression types.</summary>
+    /// <remarks>This class extends <see cref="Stream"/> and supports both compression and decompression based on the specified <see cref="CompressionType"/> and <see cref="CompressionMode"/>.</remarks>
+    /// <param name="stream">The underlying stream to perform read or write operations on.</param>
+    /// <param name="leaveOpen"><c>true</c> to leave the underlying stream open after the <see cref="CompressionStream"/> is disposed; otherwise, <c>false</c>.</param>
+    /// <exception cref="ArgumentException">Thrown when the provided stream does not support seeking.</exception>
+    public CompressionStream([NotNull] Stream stream, bool leaveOpen = false)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("The stream must support seeking.", nameof(stream));
+        }
+
+        _stream = stream;
+        _leaveOpen = leaveOpen;
+        _mode = CompressionMode.Decompress;
+        _type = CompressionType.None;
+    }
 
     /// <summary>Gets the default compression type used by the system.</summary>
     /// <value>A <see cref="CompressionType"/> value indicating the preferred compression algorithm. By default, this is set to <see cref="CompressionType.RefPack"/>.</value>
@@ -120,7 +161,7 @@ public sealed class CompressionStream : Stream
         }
     }
 
-    /// <summary>Indicates whether the stream is compressed.</summary>
+    /// <summary>Gets a value indicating whether the stream is compressed.</summary>
     /// <value><c>true</c> if the stream uses a compression type other than <see cref="CompressionType.None"/>; otherwise, <c>false</c>.</value>
     public bool IsCompressed => CompressionType is not CompressionType.None;
 
@@ -157,66 +198,6 @@ public sealed class CompressionStream : Stream
         }
     }
 
-    /// <summary>Provides functionality for handling compression and decompression streams using various compression types.</summary>
-    /// <remarks>This class extends <see cref="Stream"/> and supports reading, writing, and flushing operations based on the specified compression mode and type.</remarks>
-    /// <param name="stream">The underlying stream to use for reading and writing.</param>
-    /// <param name="type">The compression type to use for compression and decompression.</param>
-    /// <param name="leaveOpen"><c>true</c> to leave the stream open after the <see cref="CompressionStream"/> object is disposed; otherwise, <c>false</c>.</param>
-    /// <exception cref="ArgumentException">The stream must support seeking.</exception>
-    public CompressionStream([NotNull] Stream stream, CompressionType type, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _leaveOpen = leaveOpen;
-        _mode = CompressionMode.Compress;
-        _type = type;
-    }
-
-    /// <summary>Provides functionality for compressing and decompressing data streams using various compression types.</summary>
-    /// <remarks>This class extends <see cref="Stream"/> and supports both compression and decompression based on the specified <see cref="CompressionType"/> and <see cref="CompressionMode"/>.</remarks>
-    /// <param name="stream">The underlying stream to perform read or write operations on.</param>
-    /// <param name="leaveOpen"><c>true</c> to leave the underlying stream open after the <see cref="CompressionStream"/> is disposed; otherwise, <c>false</c>.</param>
-    /// <exception cref="ArgumentException">Thrown when the provided stream does not support seeking.</exception>
-    public CompressionStream([NotNull] Stream stream, bool leaveOpen = false)
-    {
-        if (!stream.CanSeek)
-        {
-            throw new ArgumentException("The stream must support seeking.", nameof(stream));
-        }
-
-        _stream = stream;
-        _leaveOpen = leaveOpen;
-        _mode = CompressionMode.Decompress;
-        _type = CompressionType.None;
-    }
-
-    /// <summary>Releases the resources used by the <see cref="CompressionStream"/>.</summary>
-    /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected override void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _decoder?.Dispose();
-
-            if (!_leaveOpen)
-            {
-                _stream.Dispose();
-            }
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
-    }
-
     /// <summary>Flushes all buffers for the compression stream and ensures that any buffered data is written to the underlying device.</summary>
     /// <remarks>This method clears any internal buffers and invokes the flush operation on both the decoder and the underlying stream. If the stream is disposed, an exception is thrown.</remarks>
     /// <exception cref="ObjectDisposedException">Thrown when the stream has already been disposed.</exception>
@@ -234,7 +215,7 @@ public sealed class CompressionStream : Stream
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _ = (_decoder?.FlushAsync(cancellationToken));
+        _ = _decoder?.FlushAsync(cancellationToken);
         return _stream.FlushAsync(cancellationToken);
     }
 
@@ -381,10 +362,7 @@ public sealed class CompressionStream : Stream
     /// <returns>A value task that represents the asynchronous read operation. The result contains the total number of bytes read into the buffer.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the stream is not readable.</exception>
     /// <exception cref="ObjectDisposedException">Thrown if the current stream has been disposed.</exception>
-    public override ValueTask<int> ReadAsync(
-        Memory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    )
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = new())
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         return !CanRead
@@ -468,6 +446,7 @@ public sealed class CompressionStream : Stream
                 specificStream.Write(buffer, offset, count);
                 break;
             }
+
             case CompressionType.HuffmanWithRunlength:
             {
                 using HuffmanWithRunlengthStream specificStream = new(
@@ -478,18 +457,21 @@ public sealed class CompressionStream : Stream
                 specificStream.Write(buffer, offset, count);
                 break;
             }
+
             case CompressionType.RefPack:
             {
                 using RefPackStream specificStream = new(_stream, CompressionMode.Compress, leaveOpen: true);
                 specificStream.Write(buffer, offset, count);
                 break;
             }
+
             case CompressionType.NoxLzh:
             {
                 using LightZhlStream specificStream = new(_stream, CompressionMode.Compress, leaveOpen: true);
                 specificStream.Write(buffer, offset, count);
                 break;
             }
+
             case CompressionType.ZLib1
             or CompressionType.ZLib2
             or CompressionType.ZLib3
@@ -568,10 +550,8 @@ public sealed class CompressionStream : Stream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
-    public override ValueTask WriteAsync(
-        ReadOnlyMemory<byte> buffer,
-        CancellationToken cancellationToken = new CancellationToken()
-    ) => new(WriteAsync(buffer.Span.ToArray(), 0, buffer.Length, cancellationToken));
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = new()) =>
+        new(WriteAsync(buffer.Span.ToArray(), 0, buffer.Length, cancellationToken));
 
     /// <summary>Attempts to write a single byte to the stream.</summary>
     /// <param name="value">The byte to write to the stream.</param>
@@ -600,6 +580,29 @@ public sealed class CompressionStream : Stream
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the resources used by the <see cref="CompressionStream"/>.</summary>
+    /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            _decoder?.Dispose();
+
+            if (!_leaveOpen)
+            {
+                _stream.Dispose();
+            }
+        }
+
+        _disposed = true;
+        base.Dispose(disposing);
     }
 
     private static byte[] CreateZLibHeader(int level)
