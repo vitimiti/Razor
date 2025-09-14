@@ -120,7 +120,7 @@ public class Vector2 : IEqualityComparer<Vector2>
     /// <param name="scale">The scalar value to multiply by.</param>
     /// <param name="value">The vector to multiply.</param>
     /// <returns>A new vector with each component multiplied by the scalar.</returns>
-    public static Vector2 operator *(float scale, Vector2 value) => Multiply(value, scale);
+    public static Vector2 operator *(float scale, Vector2 value) => Multiply(scale, value);
 
     /// <summary>Divides a vector by a scalar value.</summary>
     /// <param name="value">The vector to divide.</param>
