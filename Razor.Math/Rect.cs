@@ -236,4 +236,21 @@ public class Rect : IEqualityComparer<Rect>
     /// <param name="obj">The rectangle for which to get the hash code.</param>
     /// <returns>A 32-bit signed integer that is the hash code for the specified rectangle.</returns>
     public int GetHashCode([NotNull] Rect obj) => HashCode.Combine(obj.Left, obj.Top, obj.Right, obj.Bottom);
+
+    /// <summary>Returns a string that represents the current rectangle.</summary>
+    /// <returns>A string containing the values of the Left, Top, Right, and Bottom properties.</returns>
+    public override string ToString() => $"({Left}, {Top}, {Right}, {Bottom})";
+
+    /// <summary>Returns a string representation of the <see cref="Rect"/> object in the specified format.</summary>
+    /// <param name="formatProvider">An object that provides culture-specific formatting information.</param>
+    /// <returns>A string that represents the <see cref="Rect"/> in the specified format.</returns>
+    public string ToString(IFormatProvider? formatProvider) =>
+        $"({Left.ToString(formatProvider)}, {Top.ToString(formatProvider)}, {Right.ToString(formatProvider)}, {Bottom.ToString(formatProvider)})";
+
+    /// <summary>Returns a string representation of the <see cref="Rect"/> instance.</summary>
+    /// <param name="format">A format string that specifies the format to apply to each numeric value.</param>
+    /// <param name="formatProvider">An object that provides culture-specific formatting information.</param>
+    /// <returns>A string representation of the <see cref="Rect"/> instance.</returns>
+    public string ToString(string? format, IFormatProvider? formatProvider = null) =>
+        $"({Left.ToString(format, formatProvider)}, {Top.ToString(format, formatProvider)}, {Right.ToString(format, formatProvider)}, {Bottom.ToString(format, formatProvider)})";
 }
