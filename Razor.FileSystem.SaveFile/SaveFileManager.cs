@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------
 
 using System.Text.RegularExpressions;
+using Razor.Compression;
 using Razor.FileSystem.SaveFile.Internals;
 
 namespace Razor.FileSystem.SaveFile;
@@ -20,8 +21,14 @@ public static partial class SaveFileManager
     /// <param name="directoryPath">The directory where the save file will be created.</param>
     /// <param name="displayName">A display name associated with the save, for metadata purposes.</param>
     /// <param name="roots">A collection of root objects that implement ISerializableObject to represent the game state.</param>
+    /// <param name="compressionType">The type of compression to use for the save file.</param>
     /// <returns>Returns the full file path of the saved game state file.</returns>
-    public static string Save(string directoryPath, string displayName, IEnumerable<ISerializableObject> roots)
+    public static string Save(
+        string directoryPath,
+        string displayName,
+        IEnumerable<ISerializableObject> roots,
+        CompressionType compressionType = CompressionType.RefPack
+    )
     {
         _ = Directory.CreateDirectory(directoryPath);
 
@@ -35,7 +42,20 @@ public static partial class SaveFileManager
             try
             {
                 using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                BinaryGameStateSerializer.Save(fs, displayName, roots);
+                if (compressionType is not CompressionType.None)
+                {
+                    using MemoryStream buffer = new();
+                    BinaryGameStateSerializer.Save(buffer, displayName, roots);
+
+                    var payload = buffer.ToArray();
+                    using CompressionStream comp = new(fs, compressionType, leaveOpen: true);
+                    comp.Write(payload, 0, payload.Length);
+                    comp.Flush();
+                }
+                else
+                {
+                    BinaryGameStateSerializer.Save(fs, displayName, roots);
+                }
 
                 return fullPath;
             }

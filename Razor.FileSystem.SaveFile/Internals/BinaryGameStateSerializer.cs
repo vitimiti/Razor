@@ -8,6 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Razor.Compression;
 using Razor.Extensions;
 
 namespace Razor.FileSystem.SaveFile.Internals;
@@ -34,7 +35,6 @@ internal static class BinaryGameStateSerializer
         var rootIds = new List<int>(rootList.Count);
         rootIds.AddRange(rootList.Select(context.GetOrAssignId));
 
-        // v2: write root count and root IDs
         writer.Write(rootIds.Count);
         foreach (var id in rootIds)
         {
@@ -54,7 +54,7 @@ internal static class BinaryGameStateSerializer
             writer.Write(typeName);
 
             // Serialize payload into a temporary buffer, to prefix with size
-            using var payloadMs = new MemoryStream();
+            using MemoryStream payloadMs = new();
             using (var payloadWriter = new BinaryWriter(payloadMs, Encoding.UTF8, leaveOpen: true))
             {
                 obj.Write(payloadWriter, context);
@@ -68,76 +68,124 @@ internal static class BinaryGameStateSerializer
 
     public static IReadOnlyList<ISerializableObject> Load(Stream stream, out string? saveDisplayName)
     {
-        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+        Stream input = stream;
+        MemoryStream? tempDecompressed = null;
 
-        // Header
-        var magic = reader.ReadString();
-        if (magic != Magic)
+        try
         {
-            throw new InvalidDataException("Not a valid game state file.");
-        }
-
-        var version = reader.ReadInt32();
-        if (version != Version)
-        {
-            throw new InvalidDataException($"Unsupported version {version}.");
-        }
-
-        _ = reader.ReadByte(); // padding
-
-        saveDisplayName = reader.ReadNullTerminatedUtf8(Encoding.UTF8);
-
-        var rootIds = new List<int>();
-
-        var rootCount = reader.ReadInt32();
-        for (var i = 0; i < rootCount; i++)
-        {
-            rootIds.Add(reader.ReadInt32());
-        }
-
-        var loadContext = new LoadContext();
-        var objectsInOrder = new List<(int id, ISerializableObject obj, byte[] payload)>();
-
-        // Read all objects: construct instances first
-        while (stream.Position < stream.Length)
-        {
-            var id = reader.ReadInt32();
-            var typeName = reader.ReadString();
-            var length = reader.ReadInt32();
-            var payload = reader.ReadBytes(length);
-
-            Type type = Type.GetType(typeName, throwOnError: true)!;
-            if (Activator.CreateInstance(type) is not ISerializableObject instance)
+            if (stream.CanSeek)
             {
-                throw new InvalidDataException($"Type {typeName} does not implement ISerializableObject.");
+                stream.Position = 0;
+                using CompressionStream probe = new(stream, leaveOpen: true);
+                if (probe.IsCompressed)
+                {
+                    tempDecompressed = new MemoryStream(capacity: (int)long.Min(probe.UncompressedSize, int.MaxValue));
+
+                    probe.CopyTo(tempDecompressed);
+                    tempDecompressed.Position = 0;
+                    input = tempDecompressed;
+                }
+                else
+                {
+                    stream.Position = 0;
+                }
+            }
+            else
+            {
+                using MemoryStream copy = new();
+                stream.CopyTo(copy);
+                copy.Position = 0;
+
+                using CompressionStream probe = new(copy, leaveOpen: true);
+                if (probe.IsCompressed)
+                {
+                    tempDecompressed = new MemoryStream(capacity: (int)long.Min(probe.UncompressedSize, int.MaxValue));
+
+                    probe.CopyTo(tempDecompressed);
+                    tempDecompressed.Position = 0;
+                    input = tempDecompressed;
+                }
+                else
+                {
+                    copy.Position = 0;
+                    tempDecompressed = copy; // reuse copied raw buffer as input
+                    input = tempDecompressed;
+                }
             }
 
-            loadContext.Register(id, instance);
-            objectsInOrder.Add((id, instance, payload));
-        }
+            using var reader = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
 
-        // Now load data for all instances
-        foreach ((_, ISerializableObject obj, var payload) in objectsInOrder)
+            // Header
+            var magic = reader.ReadString();
+            if (magic != Magic)
+            {
+                throw new InvalidDataException("Not a valid game state file.");
+            }
+
+            var version = reader.ReadInt32();
+            if (version != Version)
+            {
+                throw new InvalidDataException($"Unsupported version {version}.");
+            }
+
+            _ = reader.ReadByte(); // padding
+            saveDisplayName = reader.ReadNullTerminatedUtf8(Encoding.UTF8);
+
+            var rootIds = new List<int>();
+            var rootCount = reader.ReadInt32();
+            for (var i = 0; i < rootCount; i++)
+            {
+                rootIds.Add(reader.ReadInt32());
+            }
+
+            var loadContext = new LoadContext();
+            var objectsInOrder = new List<(int id, ISerializableObject obj, byte[] payload)>();
+
+            // Read all objects: construct instances first
+            while (input.Position < input.Length)
+            {
+                var id = reader.ReadInt32();
+                var typeName = reader.ReadString();
+                var length = reader.ReadInt32();
+                var payload = reader.ReadBytes(length);
+
+                Type type = Type.GetType(typeName, throwOnError: true)!;
+                if (Activator.CreateInstance(type) is not ISerializableObject instance)
+                {
+                    throw new InvalidDataException($"Type {typeName} does not implement ISerializableObject.");
+                }
+
+                loadContext.Register(id, instance);
+                objectsInOrder.Add((id, instance, payload));
+            }
+
+            // Now load data for all instances
+            foreach ((_, ISerializableObject obj, var payload) in objectsInOrder)
+            {
+                using MemoryStream ms = new(payload, writable: false);
+                using BinaryReader r = new(ms, Encoding.UTF8, leaveOpen: true);
+                obj.Read(r, loadContext);
+                loadContext.DeferPostLoad(obj);
+            }
+
+            // Resolve references
+            loadContext.RunPostLoad();
+
+            // Resolve all roots
+            var roots = new List<ISerializableObject>(rootIds.Count);
+            roots.AddRange(
+                rootIds.Select(id =>
+                    loadContext.Resolve<ISerializableObject>(id)
+                    ?? throw new InvalidDataException($"Root object with id {id} not found.")
+                )
+            );
+
+            return roots;
+        }
+        finally
         {
-            using var ms = new MemoryStream(payload, writable: false);
-            using var r = new BinaryReader(ms, Encoding.UTF8, leaveOpen: true);
-            obj.Read(r, loadContext);
-            loadContext.DeferPostLoad(obj);
+            tempDecompressed?.Dispose();
         }
-
-        // Resolve references
-        loadContext.RunPostLoad();
-
-        // Resolve all roots
-        var roots = new List<ISerializableObject>(rootIds.Count);
-        roots.AddRange(
-            rootIds.Select(id =>
-                loadContext.Resolve<ISerializableObject>(id)
-                ?? throw new InvalidDataException($"Root object with id {id} not found.")
-            )
-        );
-
-        return roots;
     }
 
     [SuppressMessage(
@@ -156,23 +204,50 @@ internal static class BinaryGameStateSerializer
         try
         {
             using FileStream fs = File.OpenRead(path);
-            using var reader = new BinaryReader(fs, Encoding.UTF8, leaveOpen: true);
 
-            var magic = reader.ReadString();
-            if (magic != Magic)
+            Stream input = fs;
+            MemoryStream? temp = null;
+
+            try
             {
-                return false;
-            }
+                fs.Position = 0;
+                using (var probe = new CompressionStream(fs, leaveOpen: true))
+                {
+                    if (probe.IsCompressed)
+                    {
+                        temp = new MemoryStream(capacity: (int)Math.Min(probe.UncompressedSize, int.MaxValue));
+                        probe.CopyTo(temp);
+                        temp.Position = 0;
+                        input = temp;
+                    }
+                    else
+                    {
+                        fs.Position = 0;
+                    }
+                }
 
-            var version = reader.ReadInt32();
-            if (version != Version)
+                using var reader = new BinaryReader(input, Encoding.UTF8, leaveOpen: true);
+
+                var magic = reader.ReadString();
+                if (magic != Magic)
+                {
+                    return false;
+                }
+
+                var version = reader.ReadInt32();
+                if (version != Version)
+                {
+                    return false;
+                }
+
+                _ = reader.ReadByte(); // padding
+                displayName = reader.ReadNullTerminatedUtf8(Encoding.UTF8);
+                return true;
+            }
+            finally
             {
-                return false;
+                temp?.Dispose();
             }
-
-            _ = reader.ReadByte(); // padding
-            displayName = reader.ReadNullTerminatedUtf8(Encoding.UTF8);
-            return true;
         }
         catch
         {

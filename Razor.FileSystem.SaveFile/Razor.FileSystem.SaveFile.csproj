@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Razor.Compression\Razor.Compression.csproj" />
     <ProjectReference Include="..\Razor.Extensions\Razor.Extensions.csproj" />
   </ItemGroup>
 </Project>
