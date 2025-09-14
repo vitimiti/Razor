@@ -421,4 +421,21 @@ public class Vector2 : IEqualityComparer<Vector2>
     /// <param name="obj">The vector to get a hash code for.</param>
     /// <returns>A hash code based on the X and Y components of the vector.</returns>
     public int GetHashCode([NotNull] Vector2 obj) => HashCode.Combine(obj.X, obj.Y);
+
+    /// <summary>Returns a string representation of the <see cref="Vector2"/> instance.</summary>
+    /// <returns>A string in the format "(X, Y)" where X and Y are the components of the vector.</returns>
+    public override string ToString() => $"({X}, {Y})";
+
+    /// <summary>Returns a string representation of the current <see cref="Vector2"/> object.</summary>
+    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
+    /// <returns>A string that represents the current object in the format "(X, Y)".</returns>
+    public string ToString(IFormatProvider? formatProvider) =>
+        $"({X.ToString(formatProvider)}, {Y.ToString(formatProvider)})";
+
+    /// <summary>Returns a string representation of the <see cref="Vector2"/> instance.</summary>
+    /// <param name="format">A format string that specifies how the X and Y components are formatted.</param>
+    /// <param name="formatProvider">An object that provides culture-specific formatting information.</param>
+    /// <returns>A string formatted as (X, Y), representing the vector's components.</returns>
+    public string ToString(string? format, IFormatProvider? formatProvider = null) =>
+        $"({X.ToString(format, formatProvider)}, {Y.ToString(format, formatProvider)})";
 }
