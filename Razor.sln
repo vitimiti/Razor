@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Generators", "Razor.G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.FileSystem.SaveFile", "Razor.FileSystem.SaveFile\Razor.FileSystem.SaveFile.csproj", "{8FC07B5E-487D-4640-9E82-F98F2AF8AA1A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Razor.Math", "Razor.Math\Razor.Math.csproj", "{2EB89943-509B-4E27-B38F-FFB1955267D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,5 +92,9 @@ Global
 		{8FC07B5E-487D-4640-9E82-F98F2AF8AA1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FC07B5E-487D-4640-9E82-F98F2AF8AA1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FC07B5E-487D-4640-9E82-F98F2AF8AA1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EB89943-509B-4E27-B38F-FFB1955267D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EB89943-509B-4E27-B38F-FFB1955267D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EB89943-509B-4E27-B38F-FFB1955267D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EB89943-509B-4E27-B38F-FFB1955267D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
