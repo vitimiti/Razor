@@ -195,7 +195,7 @@ public class Tri
                 tri.V[0] = triPoint0;
                 tri.V[1] = triPoint1;
                 tri.V[2] = triPoint2;
-                tri.N = new Vector3(triPlane.X, triPlane.Y, triPlane.Z);
+                tri.N = (Vector3)triPlane;
                 if (tri.ContainsPoint(rayStart))
                 {
                     flags |= TriRaycasts.StartInTri;

@@ -110,6 +110,11 @@ public class Vector3 : IEqualityComparer<Vector3>
         }
     }
 
+    /// <summary>Explicitly converts a <see cref="Vector4"/> to a <see cref="Vector3"/>.</summary>
+    /// <param name="vector">The vector to convert.</param>
+    /// <returns>A new <see cref="Vector3"/> instance.</returns>
+    public static explicit operator Vector3(Vector4 vector) => FromVector4(vector);
+
     /// <summary>Adds two vectors component-wise.</summary>
     /// <param name="left">The first vector.</param>
     /// <param name="right">The second vector.</param>
@@ -167,6 +172,11 @@ public class Vector3 : IEqualityComparer<Vector3>
     /// <param name="right">The second vector to compare.</param>
     /// <returns><see langword="true"/> if the vectors are not equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator !=(Vector3 left, Vector3 right) => !object.Equals(left, right);
+
+    /// <summary>Creates a <see cref="Vector3"/> instance from a given <see cref="Vector4"/> instance by copying the X, Y, and Z components.</summary>
+    /// <param name="vector">The <see cref="Vector4"/> instance to convert to a <see cref="Vector3"/>.</param>
+    /// <returns>A new <see cref="Vector3"/> instance with X, Y, and Z components copied from the specified <see cref="Vector4"/>.</returns>
+    public static Vector3 FromVector4([NotNull] Vector4 vector) => new(vector.X, vector.Y, vector.Z);
 
     /// <summary>Adds two vectors component-wise.</summary>
     /// <param name="left">The first vector.</param>
