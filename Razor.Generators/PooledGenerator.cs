@@ -117,7 +117,7 @@ public sealed class PooledGenerator : IIncrementalGenerator
 
                 private sealed class __{{typeName}}Policy : PooledObjectPolicy<{{typeName}}>
                 {
-                    public override {{typeName}} Create() => return new {{typeName}}();
+                    public override {{typeName}} Create() => new {{typeName}}();
 
                     public override bool Return([NotNull] {{typeName}} obj)
                     {
@@ -130,6 +130,7 @@ public sealed class PooledGenerator : IIncrementalGenerator
                     }
                 }
             }
+            #nullable restore
             """;
     }
 
