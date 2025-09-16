@@ -26,10 +26,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <EditorConfigFiles Include="..\.editorconfig">
-      <Link>.editorconfig</Link>
-      <Visible>false</Visible>
-    </EditorConfigFiles>
     <AdditionalFiles Include="..\stylecop.json">
       <Link>stylecop.json</Link>
       <Visible>false</Visible>

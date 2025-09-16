@@ -371,6 +371,7 @@ dotnet_diagnostic.SA1010.severity = none
 dotnet_diagnostic.SA1011.severity = none
 dotnet_diagnostic.SA1101.severity = none
 dotnet_diagnostic.SA1111.severity = none
+dotnet_diagnostic.SA1201.severity = none # TODO: Enable this rule again once StyleCop supports 'RecordStructDeclaration'
 dotnet_diagnostic.SA1206.severity = none
 dotnet_diagnostic.SA1309.severity = none
 dotnet_diagnostic.SA1313.severity = none
