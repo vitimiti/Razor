@@ -134,11 +134,11 @@ public class Vector4 : IEqualityComparer<Vector4>
     /// <returns>The dot product of the two vectors as a float value.</returns>
     public static float operator *(Vector4 left, Vector4 right) => Multiply(left, right);
 
-    /// <summary>Divides the first vector by the second vector component-wise.</summary>
-    /// <param name="left">The dividend vector.</param>
-    /// <param name="right">The divisor vector.</param>
-    /// <returns>A new Vector4 with each component of the first vector divided by the corresponding component of the second vector.</returns>
-    public static Vector4 operator /(Vector4 left, Vector4 right) => Divide(left, right);
+    /// <summary>Divides a vector by a scalar value.</summary>
+    /// <param name="vector">The dividend vector.</param>
+    /// <param name="scalar">The scalar divisor value.</param>
+    /// <returns>A new Vector4 with each component of the vector divided by the scalar value.</returns>
+    public static Vector4 operator /(Vector4 vector, float scalar) => Divide(vector, scalar);
 
     /// <summary>Negates all components of the vector.</summary>
     /// <param name="value">The vector to negate.</param>
@@ -205,15 +205,15 @@ public class Vector4 : IEqualityComparer<Vector4>
     /// <returns>The dot product as a float value.</returns>
     public static float Multiply(Vector4 left, Vector4 right) => DotProduct(left, right);
 
-    /// <summary>Divides the first vector by the second vector component-wise.</summary>
-    /// <param name="left">The dividend vector.</param>
-    /// <param name="right">The divisor vector.</param>
-    /// <returns>A new Vector4 with each component of the first vector divided by the corresponding component of the second vector.</returns>
-    /// <remarks>This implementation uses the reciprocal of the X component of the divisor for all divisions, which may not be the intended behavior.</remarks>
-    public static Vector4 Divide([NotNull] Vector4 left, [NotNull] Vector4 right)
+    /// <summary>Divides a vector by a scalar value.</summary>
+    /// <param name="vector">The dividend vector.</param>
+    /// <param name="scalar">The scalar divisor value.</param>
+    /// <returns>A new Vector4 with each component of the vector divided by the scalar value.</returns>
+    /// <remarks>Division is performed by computing the reciprocal and multiplying each component for efficiency.</remarks>
+    public static Vector4 Divide([NotNull] Vector4 vector, [NotNull] float scalar)
     {
-        var oK = 1F / right.X;
-        return new Vector4(left.X * oK, left.Y * oK, left.Z * oK, left.W * oK);
+        var oK = 1F / scalar;
+        return new Vector4(vector.X * oK, vector.Y * oK, vector.Z * oK, vector.W * oK);
     }
 
     /// <summary>Calculates the dot product of two vectors.</summary>
