@@ -51,7 +51,7 @@
       "documentPrivateElements": false,
       "documentPrivateFields": false,
       "documentationCulture": "en-US",
-      "fileNamingConvention": "stylecop",
+      "fileNamingConvention": "metadata",
       "excludeFromPunctuationCheck": ["seealso"]
     },
     "spacingRules": {}

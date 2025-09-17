@@ -1,11 +1,29 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Label="Build Quality">
+    <IsPackable>false</IsPackable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Label="Deterministic Builds">
+    <Deterministic>true</Deterministic>
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+  </PropertyGroup>
+  <PropertyGroup Label="Continous Integration Builds">
+    <ContinuousIntegrationBuild
+      Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'"
+      >true</ContinuousIntegrationBuild
+    >
+  </PropertyGroup>
+  <PropertyGroup Label="Source Linking and debugging">
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="RootNamespace" />
@@ -24,15 +42,27 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.11.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\stylecop.json">
       <Link>stylecop.json</Link>
       <Visible>false</Visible>
     </AdditionalFiles>
-  </ItemGroup>
-  <ItemGroup>
     <None Remove="..\.editorconfig" />
     <None Remove="..\stylecop.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <AdditionalFIles Include="..\BannedSymbols.txt">
+      <Link>BannedSymbols.txt</Link>
+      <Visible>false</Visible>
+    </AdditionalFIles>
+    <None Remove="..\BannedSymbols.txt" />
   </ItemGroup>
 </Project>
