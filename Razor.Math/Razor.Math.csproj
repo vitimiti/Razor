@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Razor.Abstractions\Razor.Abstractions.csproj" />
     <ProjectReference Include="..\Razor.Attributes\Razor.Attributes.csproj" />
+    <ProjectReference Include="..\Razor.FileSystem.SaveFile\Razor.FileSystem.SaveFile.csproj" />
     <ProjectReference
       Include="..\Razor.Generators\Razor.Generators.csproj"
       OutputItemType="Analyzer"
