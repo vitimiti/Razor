@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="Razor.BrowserDispatch/Razor.BrowserDispatch.csproj" />
   <Project Path="Razor.BrowserEngine/Razor.BrowserEngine.csproj" />
-  <Project Path="Razor.SaveLoad/Razor.SaveLoad.csproj" />
+  <Folder Name="/Vegas/">
+    <Project Path="Razor.Vegas.Core/Razor.Vegas.Core.csproj" />
+  </Folder>
 </Solution>
