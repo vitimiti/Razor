@@ -1,7 +1,8 @@
 <Solution>
-  <Project Path="Razor.BrowserDispatch/Razor.BrowserDispatch.csproj" />
-  <Project Path="Razor.BrowserEngine/Razor.BrowserEngine.csproj" />
   <Folder Name="/Vegas/">
     <Project Path="Razor.Vegas.Core/Razor.Vegas.Core.csproj" />
   </Folder>
+  <Project Path="Razor.BrowserDispatch/Razor.BrowserDispatch.csproj" />
+  <Project Path="Razor.BrowserEngine/Razor.BrowserEngine.csproj" />
+  <Project Path="Razor.Utilities\Razor.Utilities.csproj" Type="Classic C#" />
 </Solution>
