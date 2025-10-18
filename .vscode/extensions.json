@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "csharpier.csharpier-vscode",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscodeintellicode-csharp",
+        "333fred.net-compiler-developer-sdk",
+        "josefpihrt-vscode.roslynator",
+        "editorconfig.editorconfig",
+        "avaloniateam.vscode-avalonia",
+        "addy2142.avalonia-templates"
+    ]
+}
