@@ -6,6 +6,8 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Runtime.InteropServices;
+
 namespace Razor.BrowserEngine;
 
 /// <summary>
@@ -41,7 +43,7 @@ public interface IBrowserInstance : IDisposable
     /// <summary>
     /// Gets the platform-specific window handle.
     /// </summary>
-    nint WindowHandle { get; }
+    SafeHandle WindowHandle { get; }
 
     /// <summary>
     /// Gets or sets the update rate in FPS.

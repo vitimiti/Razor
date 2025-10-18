@@ -6,6 +6,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+
 namespace Razor.BrowserEngine;
 
 /// <summary>
@@ -36,9 +39,9 @@ public interface IBrowserEngine : IDisposable
     /// <summary>
     /// Initialize the browser engine with optional graphics device.
     /// </summary>
-    /// <param name="graphicsDevice">Platform-specific graphics device (optional.)</param>
+    /// <param name="graphicsDevice">Platform-specific graphics device.</param>
     /// <returns>Task representing the initialization operation.</returns>
-    Task<bool> InitializeAsync(IntPtr graphicsDevice = default);
+    Task<bool> InitializeAsync([NotNull] SafeHandle graphicsDevice);
 
     /// <summary>
     /// Shutdown the browser engine.
@@ -52,21 +55,15 @@ public interface IBrowserEngine : IDisposable
     /// <param name="browserName">Unique name for the browser instance.</param>
     /// <param name="url">Initial URL to navigate to.</param>
     /// <param name="parentWindow">Parent window handle (platform-specific).</param>
-    /// <param name="x">X position.</param>
-    /// <param name="y">Y position.</param>
-    /// <param name="width">Width in pixels.</param>
-    /// <param name="height">Height in pixels.</param>
+    /// <param name="dimensions">Browser window dimensions.</param>
     /// <param name="options">Browser options flags.</param>
     /// <param name="gameInterface">Game interface callback object.</param>
     /// <returns>Browser instance or null if creation failed.</returns>
     Task<IBrowserInstance?> CreateBrowserAsync(
         string browserName,
         Uri url,
-        IntPtr parentWindow,
-        int x,
-        int y,
-        int width,
-        int height,
+        SafeHandle parentWindow,
+        (int X, int Y, int Width, int Height) dimensions,
         BrowserOptions options,
         IGameInterface? gameInterface = null
     );
@@ -90,8 +87,8 @@ public interface IBrowserEngine : IDisposable
     /// Get the platform-specific window handle for a browser.
     /// </summary>
     /// <param name="browserName">Name of the browser.</param>
-    /// <returns>Window handle or IntPtr.Zero if not found.</returns>
-    IntPtr GetWindowHandle(string browserName);
+    /// <returns>Window handle or an invalid <see cref="SafeHandle"/> if not found.</returns>
+    SafeHandle GetWindowHandle(string browserName);
 
     /// <summary>
     /// Check if a browser is open.
