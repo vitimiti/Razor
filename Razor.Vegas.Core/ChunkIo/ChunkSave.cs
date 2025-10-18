@@ -12,28 +12,43 @@ using Razor.Vegas.Core.IoStruct;
 
 namespace Razor.Vegas.Core.ChunkIo;
 
+/// <summary>
+/// Provides functionality to write chunked data to a <see cref="FileStream"/>.
+/// This type manages nested chunk headers, micro-chunks, and the patching of
+/// header sizes when chunks are completed.
+/// </summary>
+/// <param name="file">The <see cref="FileStream"/> to which chunk data will be written. The stream must support writing and seeking.</param>
 internal sealed class ChunkSave([NotNull] FileStream file)
 {
     private const int MaxStackDepth = 256;
 
     private readonly int[] _positionStack = new int[MaxStackDepth];
     private readonly ChunkHeader[] _headerStack = new ChunkHeader[MaxStackDepth];
+    private readonly MicroChunkHeader _microChunkHeader = new();
 
-    private int _stackIndex;
     private bool _inMicroChunk;
     private int _microChunkPosition;
-    private MicroChunkHeader _microChunkHeader;
 
-    public int CurrentChunkDepth => _stackIndex;
+    /// <summary>
+    /// Gets the current nesting depth of open chunks. A value of zero means no chunks are open.
+    /// </summary>
+    public int CurrentChunkDepth => StackIndex;
 
+    private int StackIndex { get; set; }
+
+    /// <summary>
+    /// Begins a new chunk with the specified identifier and writes a placeholder header.
+    /// The header is patched with the final size when <see cref="EndChunk"/> is called.
+    /// </summary>
+    /// <param name="id">The numeric chunk type identifier to store in the header.</param>
     public void BeginChunk(uint id)
     {
         ChunkHeader chunkHeader = new();
 
         // If we have a parent chunk, set its sub-chunk flag
-        if (_stackIndex > 0)
+        if (StackIndex > 0)
         {
-            _headerStack[_stackIndex - 1].SubChunk = true;
+            _headerStack[StackIndex - 1].SubChunk = true;
         }
 
         // Save the current file position and chunk header for the call to `EndChunk`
@@ -41,14 +56,19 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         chunkHeader.Size = 0;
         var filePosition = (int)file.Seek(0, SeekOrigin.Current);
 
-        _positionStack[_stackIndex] = filePosition;
-        _headerStack[_stackIndex] = chunkHeader;
-        _stackIndex++;
+        _positionStack[StackIndex] = filePosition;
+        _headerStack[StackIndex] = chunkHeader;
+        StackIndex++;
 
         // Write a temporary chunk header (all zeros)
         file.Write(chunkHeader.ToBuffer());
     }
 
+    /// <summary>
+    /// Completes the most recently opened chunk by writing the finalized header
+    /// (with the computed size) back into the file and updating any enclosing chunk's size.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown if called while a micro-chunk is active.</exception>
     public void EndChunk()
     {
         if (_inMicroChunk)
@@ -59,24 +79,31 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         var currentPosition = (int)file.Seek(0, SeekOrigin.Current);
 
         // Pop the position and chunk header off the stacks
-        _stackIndex--;
-        var chunkPosition = _positionStack[_stackIndex];
-        ChunkHeader chunkHeader = _headerStack[_stackIndex];
+        StackIndex--;
+        var chunkPosition = _positionStack[StackIndex];
+        ChunkHeader chunkHeader = _headerStack[StackIndex];
 
         // Write the completed header
         _ = file.Seek(chunkPosition, SeekOrigin.Begin);
         file.Write(chunkHeader.ToBuffer());
 
         // Add the total bytes written to any encompassing chunks
-        if (_stackIndex != 0)
+        if (StackIndex != 0)
         {
-            _headerStack[_stackIndex - 1].AddSize((uint)(chunkHeader.Size + ChunkHeader.ByteSize));
+            _headerStack[StackIndex - 1].AddSize((uint)(chunkHeader.Size + ChunkHeader.ByteSize));
         }
 
         // Go back to the original position
         _ = file.Seek(currentPosition, SeekOrigin.Begin);
     }
 
+    /// <summary>
+    /// Begins a compact "micro-chunk" with the specified single-byte identifier.
+    /// Micro-chunks are small sub-data blocks stored inside normal chunks.
+    /// </summary>
+    /// <param name="id">The micro-chunk identifier; must be less than 256.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="id"/> is 256 or greater.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if a micro-chunk is already active.</exception>
     public void BeginMicroChunk(uint id)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(id, 256U);
@@ -98,6 +125,11 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         Write(_microChunkHeader.ToBuffer());
     }
 
+    /// <summary>
+    /// Completes the active micro-chunk by writing its finalized header back
+    /// into the file. After calling this method, micro-chunk mode is exited.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown if no micro-chunk is active.</exception>
     public void EndMicroChunk()
     {
         if (!_inMicroChunk)
@@ -117,16 +149,25 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         _inMicroChunk = false;
     }
 
+    /// <summary>
+    /// Writes the provided bytes into the underlying file and updates the
+    /// currently open chunk and micro-chunk sizes as appropriate.
+    /// </summary>
+    /// <param name="bytes">The bytes to write to the file.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if attempting to write while inside a sub-chunk, or if no chunk is open,
+    /// or if the micro-chunk size would be exceeded.
+    /// </exception>
     public void Write(ReadOnlySpan<byte> bytes)
     {
         // If this hits, you mixed data and chunks within the same chunk
-        if (_headerStack[_stackIndex - 1].SubChunk)
+        if (_headerStack[StackIndex - 1].SubChunk)
         {
             throw new InvalidOperationException("Cannot write data while in a sub-chunk.");
         }
 
         // If this hits, you didn't open any chunks yet
-        if (_stackIndex <= 0)
+        if (StackIndex <= 0)
         {
             throw new InvalidOperationException("Cannot write data before opening any chunks.");
         }
@@ -135,7 +176,7 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         file.Write(bytes);
 
         // Track them in the wrapping chunk
-        _headerStack[_stackIndex - 1].AddSize((uint)bytes.Length);
+        _headerStack[StackIndex - 1].AddSize((uint)bytes.Length);
 
         // Track them if you are using a micro-chunk too
         if (!_inMicroChunk)
@@ -152,13 +193,33 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         _microChunkHeader.AddSize((byte)bytes.Length);
     }
 
+    /// <summary>
+    /// Writes a two-dimensional vector by serializing it to its buffer representation.
+    /// </summary>
+    /// <param name="vector">The vector to write.</param>
     public void Write(IoVector2 vector) => Write(vector.ToBuffer());
 
+    /// <summary>
+    /// Writes a three-dimensional vector by serializing it to its buffer representation.
+    /// </summary>
+    /// <param name="vector">The vector to write.</param>
     public void Write(IoVector3 vector) => Write(vector.ToBuffer());
 
+    /// <summary>
+    /// Writes a four-dimensional vector by serializing it to its buffer representation.
+    /// </summary>
+    /// <param name="vector">The vector to write.</param>
     public void Write(IoVector4 vector) => Write(vector.ToBuffer());
 
+    /// <summary>
+    /// Writes a quaternion by serializing it to its buffer representation.
+    /// </summary>
+    /// <param name="quaternion">The quaternion to write.</param>
     public void Write(IoQuaternion quaternion) => Write(quaternion.ToBuffer());
 
+    /// <summary>
+    /// Writes the provided string using the legacy ANSI encoding.
+    /// </summary>
+    /// <param name="str">The string to write. It is encoded with <see cref="LegacyEncodings.Ansi"/>.</param>
     public void Write(string str) => Write(LegacyEncodings.Ansi.GetBytes(str));
 }
