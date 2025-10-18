@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
+using Razor.Utilities;
 using Razor.Vegas.Core.IoStruct;
 
 namespace Razor.Vegas.Core.ChunkIo;
@@ -158,4 +159,6 @@ internal sealed class ChunkSave([NotNull] FileStream file)
     public void Write(IoVector4 vector) => Write(vector.ToBuffer());
 
     public void Write(IoQuaternion quaternion) => Write(quaternion.ToBuffer());
+
+    public void Write(string str) => Write(LegacyEncodings.Ansi.GetBytes(str));
 }
