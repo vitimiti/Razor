@@ -25,6 +25,14 @@ namespace Razor.Vegas.Core.IoStruct;
 public readonly ref struct IoQuaternion()
 {
     /// <summary>
+    /// Gets the size of the <see cref="IoQuaternion"/> in bytes.
+    /// </summary>
+    /// <remarks>
+    /// This value is 16.
+    /// </remarks>
+    public static int ByteSize => sizeof(float) * 4;
+
+    /// <summary>
     /// Gets a span over the quaternion components (X, Y, Z, W).
     /// </summary>
     /// <remarks>
@@ -63,7 +71,7 @@ public readonly ref struct IoQuaternion()
     /// </remarks>
     public Span<byte> ToBuffer()
     {
-        Span<byte> buffer = stackalloc byte[16];
+        Span<byte> buffer = stackalloc byte[ByteSize];
         BinaryPrimitives.WriteSingleLittleEndian(buffer, Q[0]);
         BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], Q[1]);
         BinaryPrimitives.WriteSingleLittleEndian(buffer[8..], Q[2]);

@@ -31,6 +31,14 @@ public class MicroChunkHeader
     public MicroChunkHeader(byte chunkType, byte chunkSize) => (ChunkType, ChunkSize) = (chunkType, chunkSize);
 
     /// <summary>
+    /// Gets the size of a <see cref="MicroChunkHeader"/> in bytes.
+    /// </summary>
+    /// <remarks>
+    /// This value is 2.
+    /// </remarks>
+    public static int ByteSize => sizeof(byte) * 2;
+
+    /// <summary>
     /// Gets or sets the chunk type identifier (one byte).
     /// </summary>
     public byte ChunkType { get; set; }

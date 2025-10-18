@@ -24,8 +24,16 @@ namespace Razor.Vegas.Core.IoStruct;
 /// 3D coordinate triples between systems; the generated record semantics
 /// provide sensible equality and printing behavior.
 /// </remarks>
-public record struct IoVector3(float X, float Y, float Z)
+public readonly record struct IoVector3(float X, float Y, float Z)
 {
+    /// <summary>
+    /// Gets the size of the <see cref="IoVector3"/> in bytes.
+    /// </summary>
+    /// <remarks>
+    /// This value is 12.
+    /// </remarks>
+    public static int ByteSize => sizeof(float) * 3;
+
     /// <summary>
     /// Gets a span over the vector components (X, Y, Z).
     /// </summary>
@@ -52,7 +60,7 @@ public record struct IoVector3(float X, float Y, float Z)
     /// </remarks>
     public readonly Span<byte> ToBuffer()
     {
-        Span<byte> buffer = stackalloc byte[12];
+        Span<byte> buffer = stackalloc byte[ByteSize];
         BinaryPrimitives.WriteSingleLittleEndian(buffer, X);
         BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], Y);
         BinaryPrimitives.WriteSingleLittleEndian(buffer[8..], Z);

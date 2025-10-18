@@ -39,7 +39,7 @@ public class ChunkHeader
     /// <remarks>
     /// This value is 8.
     /// </remarks>
-    public static int ByteSize => 8;
+    public static int ByteSize => sizeof(uint) * 2;
 
     /// <summary>
     /// Gets or sets the chunk type identifier.

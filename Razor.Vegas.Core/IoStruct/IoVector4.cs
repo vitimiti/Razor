@@ -25,8 +25,16 @@ namespace Razor.Vegas.Core.IoStruct;
 /// 4D coordinate data between systems; the generated record semantics
 /// provide sensible equality and printing behavior.
 /// </remarks>
-public record struct IoVector4(float X, float Y, float Z, float W)
+public readonly record struct IoVector4(float X, float Y, float Z, float W)
 {
+    /// <summary>
+    /// Gets the size of the <see cref="IoVector4"/> in bytes.
+    /// </summary>
+    /// <remarks>
+    /// This value is 16.
+    /// </remarks>
+    public static int ByteSize => sizeof(float) * 4;
+
     /// <summary>
     /// Creates an <see cref="IoVector4"/> instance from a byte buffer.
     /// </summary>

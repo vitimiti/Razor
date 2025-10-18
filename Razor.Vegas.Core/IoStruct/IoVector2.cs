@@ -23,8 +23,16 @@ namespace Razor.Vegas.Core.IoStruct;
 /// coordinate pairs between systems; the generated record semantics
 /// provide sensible equality and printing behavior.
 /// </remarks>
-public record struct IoVector2(float X, float Y)
+public readonly record struct IoVector2(float X, float Y)
 {
+    /// <summary>
+    /// Gets the size of the <see cref="IoVector2"/> in bytes.
+    /// </summary>
+    /// <remarks>
+    /// This value is 8.
+    /// </remarks>
+    public static int ByteSize => sizeof(float) * 2;
+
     /// <summary>
     /// Creates an <see cref="IoVector2"/> instance from a byte buffer.
     /// </summary>
@@ -47,7 +55,7 @@ public record struct IoVector2(float X, float Y)
     /// </remarks>
     public readonly Span<byte> ToBuffer()
     {
-        Span<byte> buffer = new byte[8];
+        Span<byte> buffer = new byte[ByteSize];
         BinaryPrimitives.WriteSingleLittleEndian(buffer, X);
         BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], Y);
         return buffer;
