@@ -6,6 +6,8 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Buffers.Binary;
+
 namespace Razor.Vegas.Core.IoStruct;
 
 /// <summary>
@@ -23,4 +25,40 @@ namespace Razor.Vegas.Core.IoStruct;
 /// 4D coordinate data between systems; the generated record semantics
 /// provide sensible equality and printing behavior.
 /// </remarks>
-public record struct IoVector4(float X, float Y, float Z, float W);
+public record struct IoVector4(float X, float Y, float Z, float W)
+{
+    /// <summary>
+    /// Creates an <see cref="IoVector4"/> instance from a byte buffer.
+    /// </summary>
+    /// <param name="buffer">The buffer containing the vector data.</param>
+    /// <returns>A new <see cref="IoVector4"/> instance.</returns>
+    /// <remarks>
+    /// The buffer must contain at least 16 bytes (4 bytes for each component).
+    /// The values are read in little-endian format.
+    /// </remarks>
+    public static IoVector4 FromBuffer(ReadOnlySpan<byte> buffer) =>
+        new(
+            BinaryPrimitives.ReadSingleLittleEndian(buffer),
+            BinaryPrimitives.ReadSingleLittleEndian(buffer[4..]),
+            BinaryPrimitives.ReadSingleLittleEndian(buffer[8..]),
+            BinaryPrimitives.ReadSingleLittleEndian(buffer[12..])
+        );
+
+    /// <summary>
+    /// Converts the current instance to a byte array.
+    /// </summary>
+    /// <returns>A byte array containing the vector data.</returns>
+    /// <remarks>
+    /// The returned array will contain 16 bytes.
+    /// The values are written in little-endian format.
+    /// </remarks>
+    public readonly Span<byte> ToBuffer()
+    {
+        Span<byte> buffer = stackalloc byte[16];
+        BinaryPrimitives.WriteSingleLittleEndian(buffer, X);
+        BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], Y);
+        BinaryPrimitives.WriteSingleLittleEndian(buffer[8..], Z);
+        BinaryPrimitives.WriteSingleLittleEndian(buffer[12..], W);
+        return buffer.ToArray();
+    }
+}

@@ -6,6 +6,8 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Buffers.Binary;
+
 namespace Razor.Vegas.Core.IoStruct;
 
 /// <summary>
@@ -21,4 +23,33 @@ namespace Razor.Vegas.Core.IoStruct;
 /// coordinate pairs between systems; the generated record semantics
 /// provide sensible equality and printing behavior.
 /// </remarks>
-public record struct IoVector2(float X, float Y);
+public record struct IoVector2(float X, float Y)
+{
+    /// <summary>
+    /// Creates an <see cref="IoVector2"/> instance from a byte buffer.
+    /// </summary>
+    /// <param name="buffer">The buffer containing the vector data.</param>
+    /// <returns>A new <see cref="IoVector2"/> instance.</returns>
+    /// <remarks>
+    /// The buffer must contain at least 8 bytes (4 bytes for X and 4 bytes for Y).
+    /// The values are read in little-endian format.
+    /// </remarks>
+    public static IoVector2 FromBuffer(ReadOnlySpan<byte> buffer) =>
+        new(BinaryPrimitives.ReadSingleLittleEndian(buffer), BinaryPrimitives.ReadSingleLittleEndian(buffer[4..]));
+
+    /// <summary>
+    /// Converts the current instance to a byte array.
+    /// </summary>
+    /// <returns>A byte array containing the vector data.</returns>
+    /// <remarks>
+    /// The returned array will contain 8 bytes.
+    /// The values are written in little-endian format.
+    /// </remarks>
+    public readonly Span<byte> ToBuffer()
+    {
+        Span<byte> buffer = new byte[8];
+        BinaryPrimitives.WriteSingleLittleEndian(buffer, X);
+        BinaryPrimitives.WriteSingleLittleEndian(buffer[4..], Y);
+        return buffer;
+    }
+}
