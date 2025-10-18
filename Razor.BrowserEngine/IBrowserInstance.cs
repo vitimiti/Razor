@@ -14,36 +14,6 @@ namespace Razor.BrowserEngine;
 public interface IBrowserInstance : IDisposable
 {
     /// <summary>
-    /// Navigate to a new URL.
-    /// </summary>
-    /// <param name="url">URL to navigate to.</param>
-    /// <returns>Task representing the navigation operation.</returns>
-    Task<bool> NavigateAsync(Uri url);
-
-    /// <summary>
-    /// Make an HTTP request.
-    /// </summary>
-    /// <param name="requestType">HTTP method (GET, POST, etc.)</param>
-    /// <param name="url">URL to request.</param>
-    /// <param name="formData">Form data for POST requests.</param>
-    /// <param name="extraData">Additional request data.</param>
-    /// <param name="callback">Callback for response handling.</param>
-    /// <returns>Request result.</returns>
-    Task<object?> RequestUrlAsync(
-        string requestType,
-        Uri url,
-        string? formData = null,
-        string? extraData = null,
-        Func<object, Task>? callback = null
-    );
-
-    /// <summary>
-    /// Close this browser instance.
-    /// </summary>
-    /// <returns>Task representing the close operation.</returns>
-    Task CloseBrowserAsync();
-
-    /// <summary>
     /// Gets the browser engine version.
     /// </summary>
     string EngineVersion { get; }
@@ -117,4 +87,34 @@ public interface IBrowserInstance : IDisposable
     /// Gets the system information: Video Adapter name.
     /// </summary>
     string SystemInfoVideoAdapter { get; }
+
+    /// <summary>
+    /// Navigate to a new URL.
+    /// </summary>
+    /// <param name="url">URL to navigate to.</param>
+    /// <returns>Task representing the navigation operation.</returns>
+    Task<bool> NavigateAsync(Uri url);
+
+    /// <summary>
+    /// Make an HTTP request.
+    /// </summary>
+    /// <param name="requestType">HTTP method (GET, POST, etc.)</param>
+    /// <param name="url">URL to request.</param>
+    /// <param name="formData">Form data for POST requests.</param>
+    /// <param name="extraData">Additional request data.</param>
+    /// <param name="callback">Callback for response handling.</param>
+    /// <returns>Request result.</returns>
+    Task<object?> RequestUrlAsync(
+        string requestType,
+        Uri url,
+        string? formData = null,
+        string? extraData = null,
+        Func<object, Task>? callback = null
+    );
+
+    /// <summary>
+    /// Close this browser instance.
+    /// </summary>
+    /// <returns>Task representing the close operation.</returns>
+    Task CloseBrowserAsync();
 }

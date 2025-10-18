@@ -14,6 +14,26 @@ namespace Razor.BrowserEngine;
 public interface IBrowserEngine : IDisposable
 {
     /// <summary>
+    /// Gets or sets the URL to display for bad/error pages.
+    /// </summary>
+    Uri BadPageUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the URL to display while pages are loading.
+    /// </summary>
+    Uri LoadingPageUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the mouse cursor filename for normal state.
+    /// </summary>
+    string MouseFileName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the mouse cursor filename for busy state.
+    /// </summary>
+    string MouseBusyFileName { get; set; }
+
+    /// <summary>
     /// Initialize the browser engine with optional graphics device.
     /// </summary>
     /// <param name="graphicsDevice">Platform-specific graphics device (optional.)</param>
@@ -106,24 +126,4 @@ public interface IBrowserEngine : IDisposable
     /// <param name="browserName">Name of the browser.</param>
     /// <param name="rate">Update rate in FPS.</param>
     void SetUpdateRate(string browserName, int rate);
-
-    /// <summary>
-    /// Gets or sets the URL to display for bad/error pages.
-    /// </summary>
-    Uri BadPageUrl { get; set; }
-
-    /// <summary>
-    /// Gets or sets the URL to display while pages are loading.
-    /// </summary>
-    Uri LoadingPageUrl { get; set; }
-
-    /// <summary>
-    /// Gets or sets the mouse cursor filename for normal state.
-    /// </summary>
-    string MouseFileName { get; set; }
-
-    /// <summary>
-    /// Gets or sets the mouse cursor filename for busy state.
-    /// </summary>
-    string MouseBusyFileName { get; set; }
 }
