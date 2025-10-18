@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Razor.Utilities;
 using Razor.Vegas.Core.IoStruct;
 
@@ -233,10 +234,20 @@ public sealed class ChunkSave([NotNull] FileStream file)
     public void Write(IoQuaternion quaternion) => Write(quaternion.ToBuffer());
 
     /// <summary>
-    /// Writes the provided string using the legacy ANSI encoding.
+    /// Writes a string chunk with the specified identifier and string value.
     /// </summary>
-    /// <param name="str">The string to write. It is encoded with <see cref="LegacyEncodings.Ansi"/>.</param>
-    public void Write(string str) => Write(LegacyEncodings.Ansi.GetBytes(str));
+    /// <param name="id">The chunk identifier.</param>
+    /// <param name="str">The string to write.</param>
+    /// <param name="isAnsi">True to encode the string with <see cref="LegacyEncodings.Ansi"/>, false to encode with <see cref="Encoding.UTF8"/>.</param>
+    /// <remarks>
+    /// The string is encoded with <see cref="LegacyEncodings.Ansi"/> by default, unless <paramref name="isAnsi"/> is <see langword="false"/>, in which case it is encoded with <see cref="Encoding.UTF8"/>.
+    /// </remarks>
+    public void WriteStringChunk(uint id, string str, bool isAnsi = true)
+    {
+        BeginChunk(id);
+        Write(isAnsi ? LegacyEncodings.Ansi.GetBytes(str) : Encoding.UTF8.GetBytes(str));
+        EndChunk();
+    }
 
     /// <summary>
     /// Writes a complete micro-chunk with the specified identifier and byte data.
@@ -257,13 +268,14 @@ public sealed class ChunkSave([NotNull] FileStream file)
     /// </summary>
     /// <param name="id">The micro-chunk identifier; must be less than 256.</param>
     /// <param name="str">The string data to write inside the micro-chunk.</param>
+    /// <param name="isAnsi">True to encode the string with <see cref="LegacyEncodings.Ansi"/>, false to encode with <see cref="Encoding.UTF8"/>.</param>
     /// <remarks>
-    /// The string is encoded with <see cref="LegacyEncodings.Ansi"/>.
+    /// The string is encoded with <see cref="LegacyEncodings.Ansi"/> by default, unless <paramref name="isAnsi"/> is <see langword="false"/>, in which case it is encoded with <see cref="Encoding.UTF8"/>.
     /// </remarks>
-    public void WriteMicroChunk(uint id, string str)
+    public void WriteMicroChunkString(uint id, string str, bool isAnsi = true)
     {
         BeginMicroChunk(id);
-        Write(str);
+        Write(isAnsi ? LegacyEncodings.Ansi.GetBytes(str) : Encoding.UTF8.GetBytes(str));
         EndMicroChunk();
     }
 }

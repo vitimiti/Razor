@@ -6,6 +6,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Text;
 using Razor.Utilities;
 using Razor.Vegas.Core.IoStruct;
 
@@ -387,5 +388,70 @@ public class ChunkLoad(FileStream file)
 
         str = LegacyEncodings.Ansi.GetString(buffer);
         return bytesRead;
+    }
+
+    /// <summary>
+    /// Reads the entire payload of the current chunk as a string if the provided
+    /// <paramref name="id"/> matches the currently open chunk id. The string
+    /// is decoded using the legacy ANSI encoding or UTF-8 depending on
+    /// <paramref name="isAnsi"/>.
+    /// </summary>
+    /// <param name="id">Expected chunk identifier to read from.</param>
+    /// <param name="str">Outputs the decoded string on success; otherwise <c>null</c>.</param>
+    /// <param name="isAnsi">If <c>true</c>, decode with <see cref="LegacyEncodings.Ansi"/>, otherwise use UTF-8.</param>
+    /// <returns>The number of bytes read from the chunk, or zero if the id did not match.</returns>
+    public uint ReadStringChunk(uint id, out string? str, bool isAnsi = true)
+    {
+        str = null;
+        if (id != CurrentChunkId)
+        {
+            return 0;
+        }
+
+        Span<byte> buffer = stackalloc byte[(int)CurrentChunkLength];
+        var readBytes = Read(buffer);
+        if (readBytes != buffer.Length)
+        {
+            throw new EndOfStreamException("Unexpected end of file.");
+        }
+
+        str = isAnsi ? LegacyEncodings.Ansi.GetString(buffer) : Encoding.UTF8.GetString(buffer);
+        return readBytes;
+    }
+
+    /// <summary>
+    /// Reads the contents of a micro-chunk with the provided <paramref name="id"/> into
+    /// the supplied <paramref name="buffer"/> if the id matches the current chunk id.
+    /// </summary>
+    /// <param name="id">The micro-chunk identifier to match.</param>
+    /// <param name="buffer">Destination span to receive the micro-chunk bytes.</param>
+    /// <returns>The number of bytes read into <paramref name="buffer"/>, or zero if the id did not match.</returns>
+    public uint ReadMicroChunk(uint id, Span<byte> buffer) => id != CurrentChunkId ? 0 : Read(buffer);
+
+    /// <summary>
+    /// Reads the contents of a micro-chunk with the provided <paramref name="id"/> and
+    /// decodes it as a string using either the legacy ANSI encoding or UTF-8.
+    /// </summary>
+    /// <param name="id">The micro-chunk identifier to match.</param>
+    /// <param name="str">Outputs the decoded string on success; otherwise <c>null</c>.</param>
+    /// <param name="isAnsi">If <c>true</c>, decode with <see cref="LegacyEncodings.Ansi"/>, otherwise use UTF-8.</param>
+    /// <returns>The number of bytes read from the micro-chunk, or zero if the id did not match.</returns>
+    public uint ReadMicroChunkString(uint id, out string? str, bool isAnsi = true)
+    {
+        str = null;
+        if (id != CurrentChunkId)
+        {
+            return 0;
+        }
+
+        Span<byte> buffer = stackalloc byte[(int)CurrentMicroChunkLength];
+        var readBytes = Read(buffer);
+        if (readBytes != buffer.Length)
+        {
+            throw new EndOfStreamException("Unexpected end of file.");
+        }
+
+        str = isAnsi ? LegacyEncodings.Ansi.GetString(buffer) : Encoding.UTF8.GetString(buffer);
+        return readBytes;
     }
 }
