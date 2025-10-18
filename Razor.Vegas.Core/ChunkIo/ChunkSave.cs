@@ -18,7 +18,7 @@ namespace Razor.Vegas.Core.ChunkIo;
 /// header sizes when chunks are completed.
 /// </summary>
 /// <param name="file">The <see cref="FileStream"/> to which chunk data will be written. The stream must support writing and seeking.</param>
-internal sealed class ChunkSave([NotNull] FileStream file)
+public sealed class ChunkSave([NotNull] FileStream file)
 {
     private const int MaxStackDepth = 256;
 
@@ -68,7 +68,7 @@ internal sealed class ChunkSave([NotNull] FileStream file)
     /// Completes the most recently opened chunk by writing the finalized header
     /// (with the computed size) back into the file and updating any enclosing chunk's size.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if called while a micro-chunk is active.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if no chunk is open.</exception>
     public void EndChunk()
     {
         if (_inMicroChunk)
@@ -84,7 +84,11 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         ChunkHeader chunkHeader = _headerStack[StackIndex];
 
         // Write the completed header
-        _ = file.Seek(chunkPosition, SeekOrigin.Begin);
+        if (file.Seek(chunkPosition, SeekOrigin.Begin) != chunkPosition)
+        {
+            throw new InvalidOperationException("Failed to seek to chunk header position.");
+        }
+
         file.Write(chunkHeader.ToBuffer());
 
         // Add the total bytes written to any encompassing chunks
@@ -94,7 +98,10 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         }
 
         // Go back to the original position
-        _ = file.Seek(currentPosition, SeekOrigin.Begin);
+        if (file.Seek(currentPosition, SeekOrigin.Begin) != currentPosition)
+        {
+            throw new InvalidOperationException("Failed to seek to original position.");
+        }
     }
 
     /// <summary>
@@ -141,11 +148,19 @@ internal sealed class ChunkSave([NotNull] FileStream file)
         var currentPosition = (int)file.Seek(0, SeekOrigin.Current);
 
         // Seek back and write the micro chunk header
-        _ = file.Seek(_microChunkPosition, SeekOrigin.Begin);
+        if (file.Seek(_microChunkPosition, SeekOrigin.Begin) != _microChunkPosition)
+        {
+            throw new InvalidOperationException("Failed to seek to micro-chunk header position.");
+        }
+
         file.Write(_microChunkHeader.ToBuffer());
 
         // Go back to the end of the file
-        _ = file.Seek(currentPosition, SeekOrigin.Begin);
+        if (file.Seek(currentPosition, SeekOrigin.Begin) != currentPosition)
+        {
+            throw new InvalidOperationException("Failed to seek to original position.");
+        }
+
         _inMicroChunk = false;
     }
 
@@ -222,4 +237,33 @@ internal sealed class ChunkSave([NotNull] FileStream file)
     /// </summary>
     /// <param name="str">The string to write. It is encoded with <see cref="LegacyEncodings.Ansi"/>.</param>
     public void Write(string str) => Write(LegacyEncodings.Ansi.GetBytes(str));
+
+    /// <summary>
+    /// Writes a complete micro-chunk with the specified identifier and byte data.
+    /// This method handles beginning and ending the micro-chunk automatically.
+    /// </summary>
+    /// <param name="id">The micro-chunk identifier; must be less than 256.</param>
+    /// <param name="bytes">The byte data to write inside the micro-chunk.</param>
+    public void WriteMicroChunk(uint id, ReadOnlySpan<byte> bytes)
+    {
+        BeginMicroChunk(id);
+        Write(bytes);
+        EndMicroChunk();
+    }
+
+    /// <summary>
+    /// Writes a complete micro-chunk with the specified identifier and string data.
+    /// This method handles beginning and ending the micro-chunk automatically.
+    /// </summary>
+    /// <param name="id">The micro-chunk identifier; must be less than 256.</param>
+    /// <param name="str">The string data to write inside the micro-chunk.</param>
+    /// <remarks>
+    /// The string is encoded with <see cref="LegacyEncodings.Ansi"/>.
+    /// </remarks>
+    public void WriteMicroChunk(uint id, string str)
+    {
+        BeginMicroChunk(id);
+        Write(str);
+        EndMicroChunk();
+    }
 }
