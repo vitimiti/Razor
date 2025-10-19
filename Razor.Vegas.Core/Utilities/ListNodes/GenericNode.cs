@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Razor.Vegas.Core.Utilities;
+namespace Razor.Vegas.Core.Utilities.ListNodes;
 
 /// <summary>
 /// Represents a node in a doubly-linked list. Intended to be derived from by

@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Razor.Vegas.Core.Utilities;
+namespace Razor.Vegas.Core.Utilities.ListNodes;
 
 /// <summary>
 /// A sentinel-based doubly-linked list container for <see cref="GenericNode"/> instances.
