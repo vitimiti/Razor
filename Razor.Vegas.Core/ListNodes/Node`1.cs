@@ -6,7 +6,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Razor.Vegas.Core.Utilities.ListNodes;
+namespace Razor.Vegas.Core.ListNodes;
 
 /// <summary>
 /// A typed <see cref="GenericNode"/> which exposes strongly-typed navigation

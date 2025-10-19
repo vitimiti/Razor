@@ -6,7 +6,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Razor.Vegas.Core.Utilities.ListNodes;
+namespace Razor.Vegas.Core.ListNodes;
 
 /// <summary>
 /// Generic typed wrapper around <see cref="GenericList"/> that exposes

@@ -6,7 +6,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Razor.Vegas.Core.Utilities.ListNodes;
+namespace Razor.Vegas.Core.ListNodes;
 
 /// <summary>
 /// Represents a pair of associated values with linked-list nodes for both

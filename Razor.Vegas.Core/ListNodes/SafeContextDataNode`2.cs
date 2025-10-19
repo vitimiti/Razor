@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Razor.Vegas.Core.Utilities.ListNodes;
+namespace Razor.Vegas.Core.ListNodes;
 
 /// <summary>
 /// A lightweight, null-safe convenience subclass of <see cref="ContextDataNode{T,U}"/>
