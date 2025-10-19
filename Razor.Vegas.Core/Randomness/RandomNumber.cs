@@ -17,7 +17,7 @@ namespace Razor.Vegas.Core.Randomness;
 /// This class is a port of the <c>RandomNumber</c> class from the legacy
 /// <c>Razor.Vegas.Core</c> library.
 /// </remarks>
-public static class RandomNumber
+internal static class RandomNumber
 {
     /// <summary>
     /// Picks a random number from the specified range.
