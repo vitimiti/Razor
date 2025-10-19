@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Razor.Vegas.Core;
+namespace Razor.Vegas.Core.Utilities;
 
 /// <summary>
 /// Helper that expands and stores program arguments. Supports response files
