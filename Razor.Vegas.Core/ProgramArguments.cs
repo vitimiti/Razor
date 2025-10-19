@@ -28,6 +28,9 @@ public class ProgramArguments
     /// </summary>
     /// <param name="args">The raw argument array passed to the program.</param>
     /// <param name="filePrefix">Optional prefix that marks a response-file argument (default is "@"). If <c>null</c>, response-file expansion is skipped.</param>
+    /// <remarks>
+    /// If the response file does not exist, the argument is ignored.
+    /// </remarks>
     public ProgramArguments([NotNull] string[] args, string? filePrefix = "@")
     {
         var expanded = new List<string>();
@@ -42,6 +45,7 @@ public class ProgramArguments
                     fileName = fileName[1..^1];
                 }
 
+                // Ignore the file if it doesn't exist, process it otherwise
                 if (File.Exists(fileName))
                 {
                     expanded.AddRange(
@@ -51,10 +55,6 @@ public class ProgramArguments
                         where !line.StartsWith(';')
                         select line
                     );
-                }
-                else
-                {
-                    throw new FileNotFoundException($"Response file '{fileName}' not found.");
                 }
             }
             else
@@ -68,8 +68,7 @@ public class ProgramArguments
 
     /// <summary>
     /// Gets the processed argument list as a read-only collection. This includes
-    /// any expanded response-file lines and preserves original arguments when a
-    /// response file could not be read.
+    /// any expanded response-file lines.
     /// </summary>
     public IReadOnlyCollection<string> Registered => _args;
 }
