@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------
-// <copyright file="NodeList.cs" company="Razor Project Authors">
+// <copyright file="NodeList`1.cs" company="Razor Project Authors">
 // Copyright (c) Razor Project Authors. All rights reserved.
 // Licensed under the MIT license.
 // See LICENSE.md for more information.
