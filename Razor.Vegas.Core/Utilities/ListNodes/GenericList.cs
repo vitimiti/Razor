@@ -116,13 +116,23 @@ public class GenericList : IDisposable
     /// Insert <paramref name="node"/> immediately after the head sentinel (add to head).
     /// </summary>
     /// <param name="node">The node to insert at the head of the list.</param>
-    public void AddHead([NotNull] GenericNode node) => FirstNode.Link(node);
+    /// <exception cref="ObjectDisposedException">Thrown if the list has been disposed.</exception>
+    public void AddHead([NotNull] GenericNode node)
+    {
+        ObjectDisposedException.ThrowIf(_disposedValue, this);
+        FirstNode.Link(node);
+    }
 
     /// <summary>
     /// Insert <paramref name="node"/> immediately before the tail sentinel (add to tail).
     /// </summary>
     /// <param name="node">The node to append to the list.</param>
-    public void AddTail([NotNull] GenericNode node) => LastNode.Previous!.Link(node);
+    /// <exception cref="ObjectDisposedException">Thrown if the list has been disposed.</exception>
+    public void AddTail([NotNull] GenericNode node)
+    {
+        ObjectDisposedException.ThrowIf(_disposedValue, this);
+        LastNode.Previous!.Link(node);
+    }
 
     /// <summary>
     /// Dispose pattern: unlinks and removes all valid nodes when disposing the list.
